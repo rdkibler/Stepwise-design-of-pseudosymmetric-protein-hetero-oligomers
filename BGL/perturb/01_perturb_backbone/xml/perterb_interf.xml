@@ -1,0 +1,112 @@
+
+
+<ROSETTASCRIPTS>
+    ##RUN WITH: /home/bcov/ppi/builds/19-08-28/main/source/cmake/build_release_omp_hdf5/rosetta_scripts -holes:dalphaball /home/bcov/ppi/tutorial_build/main/source/external/DAlpahBall/DAlphaBall.gcc -indexed_structure_store:fragment_store /home/brunette/DBs/hdf5/ss_grouped_vall_helix_shortLoop.h5 -corrections::beta_nov16 true 
+
+    #REMOVED:-dunbrack_prob_buried 0.9 -dunbrack_prob_nonburied 0.9 -dunbrack_prob_buried_semi 0.9 -dunbrack_prob_nonburied_semi 0.9
+    <SCOREFXNS>
+        <ScoreFunction name="sfxn" weights="beta_nov16" />
+
+	<ScoreFunction name="sfxn_bb_perterb" weights="beta_nov16" >
+            <Reweight scoretype="coordinate_constraint" weight="5.0"/> #play with this
+        </ScoreFunction>
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+        <True name="all"/>
+        <Chain name="chainA" chains="A"/> #local
+        <Chain name="chainB" chains="B"/> #local
+
+        <SSElement name="interface_chA" selection="n_term" to_selection="3,H,M" chain="A" />
+        <SSElement name="interface_chB" selection="-3,H,M" to_selection="c_term" chain="B" />
+
+        <Or name="AB_interface" selectors="interface_chA,interface_chB" />
+        <Not name="Not_interface" selector="AB_interface" />
+
+        <Or name="design_selector" selectors="AB_interface"/>
+        <Not name="not_design_selector" selector="design_selector"/>
+        <Neighborhood name="pack_selector" selector="design_selector" distance="8.0" include_focus_in_subset="0"/>
+        <Not name="not_pack_selector" selector="pack_selector"/>
+        <And name="lock_selector" selectors="not_pack_selector,not_design_selector"/>
+
+	<And name="pack_A_selector" selectors="chainA,pack_selector"/>
+	<And name="pack_B_selector" selectors="chainB,pack_selector"/>
+
+	<And name="design_A_selector" selectors="chainA,design_selector"/>
+	<And name="design_B_selector" selectors="chainB,design_selector"/>
+    </RESIDUE_SELECTORS>
+
+    <MOVERS>
+
+        <ClearConstraintsMover name="clear_constraints" />
+        <AddConstraints name="add_csts">
+            <CoordinateConstraintGenerator name="constrain" residue_selector="not_design_selector"/>
+        </AddConstraints>
+        <ScoreMover name="score!" scorefxn="sfxn"/>
+
+        <VirtualRoot name="apply_vroot" removable="1" remove="0"/>
+     	<VirtualRoot name="remove_vroot" removable="1" remove="1"/>
+
+        <AtomTree name="change_foldtree" fold_tree_file="%%ft_file%%"/>
+        <AtomTree name="reset_foldtree" simple_ft="1"/>
+
+
+        #previous version used 0.6 for pertscale. i think i might want to make this a little crazier.
+        #I also want to play around with turning off the constraints that pull it back to the native conformation
+        
+        #prev nmodes=5, perscale=0.6, mm=false
+        <NormalModeRelax name="normal_modes_A"
+                cartesian="true"
+                centroid="false"
+                nmodes="%%nmodes%%"
+                mix_modes="%%mm%%" 
+                pertscale="%%pertscale%%"
+                randomselect="true"
+                scorefxn="sfxn_bb_perterb"
+                relaxmode="min"
+                cartesian_minimize="false">
+                <MoveMap name="mm" bb="false" chi="false" jump="false">
+                    <ResidueSelector selector="all" bb="false" chi="false"/>
+                    <ResidueSelector selector="pack_A_selector" bb="false" chi="true"/>
+                    <ResidueSelector selector="design_A_selector" bb="true" chi="true"/>
+                </MoveMap>
+        </NormalModeRelax>
+
+        <NormalModeRelax name="normal_modes_B"
+                cartesian="true"
+                centroid="false"
+                nmodes="%%nmodes%%"
+                mix_modes="%%mm%%" 
+                pertscale="%%pertscale%%"
+                randomselect="true"
+                scorefxn="sfxn_bb_perterb"
+                relaxmode="min"
+                cartesian_minimize="false">
+                <MoveMap name="mm" bb="false" chi="false" jump="false">
+                    <ResidueSelector selector="all" bb="false" chi="false"/>
+                    <ResidueSelector selector="pack_B_selector" bb="false" chi="true"/>
+                    <ResidueSelector selector="design_B_selector" bb="true" chi="true"/>
+                </MoveMap>
+        </NormalModeRelax>
+
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+    	<Add mover="apply_vroot"/>
+        <Add mover="change_foldtree"/>
+        <Add mover="add_csts"/>
+
+        <Add mover="score!"/>
+	#do chain B before chain A because chain A doesn't move much.
+	#moving chain B may give more room to move chain A
+        <Add mover="normal_modes_B"/>
+        <Add mover="normal_modes_A"/>
+
+        <Add mover="remove_vroot"/>
+        <Add mover="reset_foldtree"/>
+        <Add mover="clear_constraints" />
+
+    </PROTOCOLS>
+    <OUTPUT scorefxn="sfxn"/>
+</ROSETTASCRIPTS>

@@ -1,0 +1,6 @@
+copied from the HR design folder at revision ~7
+
+Turning on add_sap mover, which was not on before, oops. 
+
+
+Hmm actually consider removing the SAP mover. This scaffold doesn't suffer from aggregation (though maybe adding that would improve expression). So it's not strictly necessary

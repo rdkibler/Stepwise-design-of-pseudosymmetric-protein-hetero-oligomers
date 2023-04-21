@@ -1,0 +1,18 @@
+import glob
+
+
+pdbs = glob.glob("../05*/output/*/*.pdb")
+
+max_elements_per_dir = 2000
+elements_in_dir = 0
+dir_counter = 0
+copies = 5
+
+
+for pdb in pdbs:
+	for c in range(copies):
+		if elements_in_dir > max_elements_per_dir:
+			elements_in_dir = 0
+			dir_counter += 1
+		elements_in_dir += 1
+		print(f"./run/run.py {pdb} {dir_counter} {c}")

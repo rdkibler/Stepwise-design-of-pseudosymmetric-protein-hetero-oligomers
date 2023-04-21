@@ -1,0 +1,567 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+
+		<ScoreFunction name="hard" weights="beta_nov16"/>
+		<ScoreFunction name="hard_cart" weights="beta_nov16_cart"/>
+
+
+
+
+		<ScoreFunction name="up_ele" weights="beta_nov16_cst">
+			<Reweight scoretype="fa_elec" weight="1.4"/>
+			<Reweight scoretype="hbond_sc" weight="2.0"/>
+			<Reweight scoretype="aa_composition" weight="1.0"/>
+		</ScoreFunction>
+
+
+
+
+					<ScoreFunction name="sfxn_design" weights="beta_nov16" >
+                <Reweight scoretype="res_type_constraint" weight="2.0" />
+                <Reweight scoretype="aa_composition" weight="1.0" />
+                <Set use_hb_env_dep="true" />
+                <Reweight scoretype="approximate_buried_unsat_penalty" weight="17" />
+                <Set approximate_buried_unsat_penalty_burial_atomic_depth="3.5" />
+                <Set approximate_buried_unsat_penalty_hbond_energy_threshold="-1.0" />
+                <Set approximate_buried_unsat_penalty_natural_corrections1="true" />
+                <Set approximate_buried_unsat_penalty_hbond_bonus_cross_chain="-7" />
+                <Set approximate_buried_unsat_penalty_hbond_bonus_ser_to_helix_bb="1"/>
+                <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+                <Reweight scoretype="atom_pair_constraint" weight="1.0"/>
+                <Reweight scoretype="angle_constraint" weight="1.0"/>
+                <Reweight scoretype="dihedral_constraint" weight="1.0"/>
+                <Reweight scoretype="cart_bonded" weight="1.5"/>
+                <Reweight scoretype="pro_close" weight="0.0"/> #avoids double counting proline
+            </ScoreFunction>
+
+            <ScoreFunction name="sfxn" weights="beta_nov16" />
+
+
+
+
+
+	</SCOREFXNS>
+
+	<RESIDUE_SELECTORS>
+		<SecondaryStructure name="loops" ss="L"/>
+
+
+		<ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+		<Layer name="hbnet_core" select_core="true" core_cutoff="3.6" />
+		<Neighborhood name="around_hbnet" selector="hbnet_residues" distance="5.0" />
+		<Neighborhood name="around_hbnet_with_focus" selector="hbnet_residues" distance="5.0" include_focus_in_subset="1"/>
+		<And name="core_around_hbnet" selectors="hbnet_core,around_hbnet"/>
+		Layer name="pick_core_and_boundary_SASA" select_core="true" select_boundary="true" use_sidechain_neighbors="false" core_cutoff="35" surface_cutoff="45" />
+		Layer name="pick_core_and_boundary_SASA_end" select_core="true" select_boundary="true" use_sidechain_neighbors="false" core_cutoff="35" surface_cutoff="42.5" />
+		Layer name="pick_core_SASA" select_core="true" use_sidechain_neighbors="false" core_cutoff="35" />
+		Layer name="pick_boundary_SASA" select_boundary="true" use_sidechain_neighbors="false" core_cutoff="30" surface_cutoff="45" /> 30 here to catch polars that snake to core during fdes
+		Layer name="pick_core_and_surface_SASA" select_core="true" select_surface="true" core_cutoff="35" />
+		Layer name="pick_surface_and_boundary_SASA" select_surface="true" select_boundary="true" core_cutoff="35" surface_cutoff="45" />
+		
+
+
+
+					<True name="all"/>
+            <Chain name="chainA" chains="A"/>
+            <Chain name="chainB" chains="B"/>
+
+	        #a little wider than before
+            SSElement name="crude_interface_chA" selection="n_term" to_selection="3,H" chain="A" />
+            SSElement name="crude_interface_chB" selection="-3,H" to_selection="c_term" chain="B" />
+			
+			<SSElement name="crude_interface_chA" selection="-3,H" to_selection="c_term" chain="A" />
+        	<SSElement name="crude_interface_chB" selection="n_term" to_selection="3,H" chain="B" />
+
+
+
+            <Or name="crude_AB_interface" selectors="crude_interface_chA,crude_interface_chB" />
+            <Not name="Not_crude_interface" selector="crude_AB_interface" />
+
+
+            <ResidueName name="pro_and_gly_positions" residue_name3="PRO,GLY" />
+
+            <Layer name="surf" select_core="false" select_boundary="false" select_surface="true" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+            <Layer name="bdry" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+            <Layer name="core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+
+
+            <SecondaryStructure name="sheet" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="E"/>
+            <SecondaryStructure name="entire_loop" overlap="0" minH="3" minE="2" include_terminal_loops="true" use_dssp="true" ss="L"/>
+            <SecondaryStructure name="entire_helix" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="H"/>
+            <And name="helix_cap" selectors="entire_loop">
+                <PrimarySequenceNeighborhood lower="1" upper="0" selector="entire_helix"/>
+            </And>
+            <And name="helix_start" selectors="entire_helix">
+                <PrimarySequenceNeighborhood lower="0" upper="1" selector="helix_cap"/>
+            </And>
+            <And name="helix" selectors="entire_helix">
+                <Not selector="helix_start"/>
+            </And>
+            <And name="loop" selectors="entire_loop">
+                <Not selector="helix_cap"/>
+            </And>
+
+
+            <ResiduePDBInfoHasLabel name="hbnet_resis" property="HBNet"/>
+            	<Not name="not_hbnet" selector="hbnet_resis"/>
+		<And name="chainA_core_hbnet_resis" selectors="chainA,hbnet_resis,core"/>
+            <And name="chainB_core_hbnet_resis" selectors="chainB,hbnet_resis,core"/>
+
+            
+            <Neighborhood name="pre_design_around_hbnet" selector="hbnet_resis" distance="7.0" include_focus_in_subset="1"/>
+            <InterfaceByVector name="pre_design_interface" grp1_selector="crude_interface_chA" grp2_selector="crude_interface_chB"/>
+            <Or name="pre_design_selector" selectors="pre_design_around_hbnet,pre_design_interface"/>
+            <And name="design_selector" selectors="pre_design_selector,not_hbnet"/>
+            <Neighborhood name="pack_selector" selector="design_selector" distance="6.0" include_focus_in_subset="0"/>
+            <Not name="not_pack_selector" selector="pack_selector"/>
+            <Or name="not_lock_selector" selectors="design_selector,pack_selector"/>
+            <Not name="lock_selector" selector="not_lock_selector"/>
+
+            
+            <Or name="move_bb_chi" selectors="crude_AB_interface"/>
+            <Neighborhood name="move_chi" selector="move_bb_chi" distance="6.0" include_focus_in_subset="1"/>
+
+
+
+
+
+
+
+
+
+
+
+		<Chain name="chain_a" chains="A"/>
+		<Chain name="chain_b" chains="B"/>
+		<InterfaceByVector name="both_AB_interface" grp1_selector="chain_a" grp2_selector="chain_b"/>
+		<And name="AB_interface" selectors="crude_AB_interface,both_AB_interface"/>
+		<And name="interface_A" selectors="AB_interface,chain_a"/>
+		<And name="interface_B" selectors="AB_interface,chain_b"/>
+		<ResidueName name="LIV" residue_name3="VAL,ILE,LEU" />
+
+		<And name="AB_ILV" selectors="LIV,not_lock_selector"/>
+		<Not name="not_AB_ILV" selector="AB_ILV"/>
+
+		<And name="a_LIV" selectors="chain_a,LIV"/>
+		<And name="b_LIV" selectors="chain_b,LIV"/>
+		<And name="side_a_LIV" selectors="crude_interface_chA,LIV"/>
+		<And name="side_b_LIV" selectors="crude_interface_chB,LIV"/>
+		<And name="AB_interface_LIV" selectors="AB_interface,LIV"/>
+		<Not name="not_side_a_LIV" selector="side_a_LIV"/>
+		<Not name="not_side_b_LIV" selector="side_b_LIV"/>
+
+
+
+
+		<Not name="not_AB_interface_LIV" selector="AB_interface_LIV"/>
+
+		And name="a_core" selectors="chain_a,pick_core_SASA"/>
+		And name="b_core" selectors="chain_b,pick_core_SASA"/>
+
+
+
+		<SSElement name="chain_a_h1" selection="-1,H" chain="A" />
+		<SSElement name="chain_a_h2" selection="-2,H" chain="A" />
+		<SSElement name="chain_b_h1" selection="1,H" chain="B" />
+		<SSElement name="chain_b_h2" selection="2,H" chain="B" />
+		Index name="chain_a_h1" resnums="1A-35A"/> #specific for 5 repeating (actual, 7residue) heptads!
+		Not name="not_chain_a_h1" selector="chain_a_h1"/>
+		Not name="not_loop" selector="loops"/> 
+		And name="chain_a_h2" selectors="not_chain_a_h1,not_loop,chain_a"/> #don't know how long loops are so I gotta use a bit of logic to find the second helix
+
+		<InterfaceByVector name="A1B1_interface" grp1_selector="chain_a_h1" grp2_selector="chain_b_h1"/>
+		<InterfaceByVector name="A2B1_interface" grp1_selector="chain_a_h2" grp2_selector="chain_b_h1"/>
+		<InterfaceByVector name="A1B2_interface" grp1_selector="chain_a_h1" grp2_selector="chain_b_h2"/>
+		<InterfaceByVector name="A2B2_interface" grp1_selector="chain_a_h2" grp2_selector="chain_b_h2"/>
+		<InterfaceByVector name="A1A_interface" grp1_selector="chain_a_h1" grp2_selector="chain_a"/>
+		<InterfaceByVector name="B1B_interface" grp1_selector="chain_b_h1" grp2_selector="chain_b"/>
+
+		<And name="A1B1_interface_LIV" selectors="A1B1_interface,LIV"/>
+		<Not name="not_A1B1_interface_LIV" selector="A1B1_interface_LIV"/>
+		<And name="A2B1_interface_LIV" selectors="A2B1_interface,LIV"/>
+		<Not name="not_A2B1_interface_LIV" selector="A2B1_interface_LIV"/>
+		<And name="A1B2_interface_LIV" selectors="A1B2_interface,LIV"/>
+		<Not name="not_A1B2_interface_LIV" selector="A1B2_interface_LIV"/>
+		<And name="A2B2_interface_LIV" selectors="A2B2_interface,LIV"/>
+		<Not name="not_A2B2_interface_LIV" selector="A2B2_interface_LIV"/>
+		<And name="A1A_interface_LIV" selectors="A1A_interface,LIV"/>
+		<Not name="not_A1A_interface_LIV" selector="A1A_interface_LIV"/>
+		<And name="B1B_interface_LIV" selectors="B1B_interface,LIV"/>
+		<Not name="not_B1B_interface_LIV" selector="B1B_interface_LIV"/>
+
+
+
+
+	
+	</RESIDUE_SELECTORS>
+
+	<TASKOPERATIONS>
+		<IncludeCurrent name="current"/> #This takes the current rotamers and adds them to the pool of rotamers that rosetta will check (during packing?). Rotamers are lost after (before???) a packing run, so this is being called to restore some information about what Rosetta previously thought were good rotamers.
+
+		<LimitAromaChi2 name="arochi"/> #rosetta likes to use rotamers of PHE, TYR, and HIS that have chi2, but this is bad because it's a lot to search and rarely works? 
+			
+		<ExtraRotamersGeneric ex1="1" ex2="1" name="ex1_ex2"/> #By default, rosetta constrains its sidechain conformation sampling to a smaller library (Dunbrack rotamer library), but if you want it to sample more (less ideal?) conformations, you can set ex flags. Each ex# flag controls sampling of chi id #. 
+
+
+
+
+
+
+		
+		# restrict AAs of loops based on ABEGO
+		<ConsensusLoopDesign name="disallow_non_abego_aas"/>
+
+		<DesignRestrictions name="layer_design">
+				<Action selector_logic="surf AND helix_start"  aas="DEHKPQR"/>
+				<Action selector_logic="surf AND helix"        aas="EHKQR"/>
+				<Action selector_logic="surf AND sheet"        aas="EHKNQRST"/>
+				<Action selector_logic="surf AND loop"         aas="DEGHKNPQRST"/>
+				<Action selector_logic="bdry AND helix_start" aas="ADEHIKLNPQRSTVWY"/>
+				<Action selector_logic="bdry AND helix"       aas="ADEHIKLNQRSTVWYM"/>
+				<Action selector_logic="bdry AND sheet"       aas="DEFHIKLNQRSTVWY"/>
+				<Action selector_logic="bdry AND loop"        aas="ADEFGHIKLNPQRSTVWY"/>
+				<Action selector_logic="core AND helix_start"     aas="AFILVWYP"/>
+				<Action selector_logic="core AND helix"           aas="AFILVWYMT"/> #throwing in threonine as a versitile hbnet capper. Good idea? Hmm...
+				<Action selector_logic="core AND sheet"           aas="FILVWYT"/>
+				<Action selector_logic="core AND loop"            aas="AFGILPVWYMT"/>
+				<Action selector_logic="helix_cap"                aas="DNSTP"/>
+		</DesignRestrictions>
+
+<OperateOnResidueSubset name="pack" selector="pack_selector" >
+                <RestrictToRepackingRLT/> 
+            </OperateOnResidueSubset>
+
+            <OperateOnResidueSubset name="lock" selector="lock_selector" >
+                <PreventRepackingRLT/> 
+            </OperateOnResidueSubset>
+
+
+
+    <InitializeFromCommandline name="init"/> 
+
+		<OperateOnResidueSubset name="hbnet_task" selector="hbnet_residues">
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<RestrictToRepacking name="repack_only"/>
+
+		OperateOnCertainResidues name="ILV">
+			NoResFilter>
+				ResidueName3Is name3="ILE,LEU,VAL"/>
+			/NoResFilter>
+			PreventRepackingRLT/>
+		/OperateOnCertainResidues>
+
+		<OperateOnResidueSubset name="ILV" selector="not_AB_ILV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+
+
+		<OperateOnCertainResidues name="aro_apolar">
+			<NoResFilter>
+				<ResidueType apolar="1" aromatic="1" charged="0" polar="0"/>
+			</NoResFilter>
+			<PreventRepackingRLT/>
+		</OperateOnCertainResidues>
+
+		<OperateOnResidueSubset name="A_ILV" selector="not_side_a_LIV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="B_ILV" selector="not_side_b_LIV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="AB_interface_ILV" selector="not_AB_interface_LIV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+
+
+
+
+		<OperateOnResidueSubset name="A1B1_interface_ILV" selector="not_A1B1_interface_LIV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="A1B2_interface_ILV" selector="not_A1B2_interface_LIV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="A1A_interface_ILV" selector="not_A1A_interface_LIV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="A2B1_interface_ILV" selector="not_A2B1_interface_LIV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="A2B2_interface_ILV" selector="not_A2B2_interface_LIV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="B1B_interface_ILV" selector="not_B1B_interface_LIV">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+
+
+<OperateOnResidueSubset name="pack_bdry" selector="bdry">
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+
+<OperateOnResidueSubset name="pack_core" selector="core">
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+
+<OperateOnResidueSubset name="pack_surf" selector="surf">
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+
+
+
+
+
+		<PruneBadRotamers name="prune_bad_rotamers" probability_cut="0.008" />
+
+
+
+		<OperateOnResidueSubset name="restrict_PRO_GLY" selector="pro_and_gly_positions">
+                <PreventRepackingRLT/>
+            </OperateOnResidueSubset>
+
+     <DesignRestrictions name="only_exchange_LIV">
+				<Action selector_logic="LIV"  aas="ILV"/>
+		</DesignRestrictions>
+  <ProteinInterfaceDesign name="pack_long" design_chain1="0" design_chain2="0" jump="1" interface_distance_cutoff="15"/>
+<PruneBuriedUnsats name="prune_buried_unsats" allow_even_trades="false" atomic_depth_cutoff="3.5" minimum_hbond_energy="-1.0"/>
+	</TASKOPERATIONS>
+	<MOVERS>
+		<TaskAwareMinMover name="min" scorefxn="sfxn" bb="0" chi="1" task_operations="pack_long"/>
+	</MOVERS>
+
+	<FILTERS>
+		<PreProline name="prepro" use_statistical_potential="0" />
+		<ResidueCount name="ala_count" max_residue_count="30" residue_types="ALA" confidence="0" residue_selector="crude_AB_interface"/>
+
+		<ResidueCount name="interfA_ILVF_count" min_residue_count="5" residue_types="ILE,LEU,VAL,PHE" residue_selector="interface_A" confidence="0"/>
+		<ResidueCount name="interfB_ILVF_count" min_residue_count="5" residue_types="ILE,LEU,VAL,PHE" residue_selector="interface_B" confidence="0"/>
+
+
+
+		<AverageDegree name="AveDeg_A_ILV" threshold="0" task_operations="A_ILV" distance_threshold="10" confidence="0"/>
+		<AverageDegree name="AveDeg_B_ILV" threshold="0" task_operations="B_ILV" distance_threshold="10" confidence="0"/>
+		<AverageDegree name="AveDeg_AB_interface_ILV" threshold="0" task_operations="AB_interface_ILV" distance_threshold="10" confidence="0"/>
+		<AverageDegree name="AveDeg_ILV" threshold="0" task_operations="ILV" distance_threshold="10" confidence="0"/>
+		<AverageDegree name="AveDeg_aro_apolar" threshold="0" task_operations="aro_apolar" distance_threshold="10" confidence="0"/>
+		
+		<SSShapeComplementarity name="ss_sc" verbose="0" loops="0" helices="1" confidence="0" min_sc="0.65"/> 
+		
+		<AtomicContactCount name="atomcount_A_ILV" partition="none" task_operations="A_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+		<AtomicContactCount name="atomcount_B_ILV" partition="none" task_operations="B_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+		<AtomicContactCount name="atomcount_AB_interface_ILV" partition="none" task_operations="AB_interface_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+		<AtomicContactCount name="atomcount_ILV" partition="jump" task_operations="ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+		<AtomicContactCount name="atomcount_norm_aro_apolar" partition="jump" task_operations="aro_apolar" distance="4.5" normalize_by_sasa="1" confidence="0"/>
+
+		<AtomicContactCount name="atomcount_A1B1_interface_ILV_chain" partition="chain" task_operations="A1B1_interface_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+		<AtomicContactCount name="atomcount_A1B2_interface_ILV_chain" partition="chain" task_operations="A1B2_interface_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+		<AtomicContactCount name="atomcount_A1A_interface_ILV_chain" partition="chain" task_operations="A1A_interface_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+		<AtomicContactCount name="atomcount_A2B1_interface_ILV_chain" partition="chain" task_operations="A2B1_interface_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+		<AtomicContactCount name="atomcount_A2B2_interface_ILV_chain" partition="chain" task_operations="A2B2_interface_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+		<AtomicContactCount name="atomcount_B1B_interface_ILV_chain" partition="chain" task_operations="B1B_interface_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+<AtomicContactCount name="atomcount_AB_interface_ILV_chain" partition="chain" task_operations="AB_interface_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+
+
+<Ddg name="ddg"  threshold="-10" jump="1" repeats="5" repack="1" relax_mover="min" confidence="0" scorefxn="sfxn" task_operations="repack_only,current" />
+<InterfaceHoles name="interface_holes" confidence="0" jump="1" />
+<Sasa name="interface_buried_sasa" confidence="0" />
+<Sasa name="interface_hydrophobic_sasa" confidence="0" hydrophobic="True" />
+    <Sasa name="interface_polar_sasa" confidence="0" polar="True" />
+
+<NetCharge name="NetCharge_chainA" min="-100" max="100" chain="1"  confidence="0" />
+    <NetCharge name="NetCharge_chainB" min="-100" max="100" chain="2"  confidence="0" />
+		<Sasa name="sasa" confidence="0" />
+		<CavityVolume name="cav_vol" />
+		<ExposedHydrophobics name="exposedhydrop" sasa_cutoff="20" threshold="0" confidence="0"/>
+		<Holes name="network_holes" threshold="1.8" residue_selector="core_around_hbnet" normalize_per_atom="true" exclude_bb_atoms="true" confidence="0"/>
+	
+		<BuriedUnsatHbonds name="sbuns5.5_heavy_ball_1.1D" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="sfxn" ignore_surface_res="false" print_out_info_to_pdb="true" confidence="0" use_ddG_style="true" burial_cutoff="0.01" dalphaball_sasa="true" probe_radius="1.1" atomic_depth_selection="5.5" atomic_depth_deeper_than="false" burial_cutoff_apo="0.2" atomic_depth_resolution="0.49" max_hbond_energy="1.5" />
+    <BuriedUnsatHbonds name="vbuns5.5_heavy_ball_1.1D" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="sfxn"  ignore_surface_res="false" print_out_info_to_pdb="true" confidence="0" use_ddG_style="true" dalphaball_sasa="true" probe_radius="1.1" atomic_depth_selection="5.5" burial_cutoff="1000" burial_cutoff_apo="0.2" atomic_depth_apo_surface="5.5" atomic_depth_resolution="0.49" max_hbond_energy="1.5" />
+
+    <ResidueCount name="sideA_ILVF_count" min_residue_count="5" residue_types="ILE,LEU,VAL,PHE" residue_selector="crude_interface_chA" confidence="0"/>
+    <ResidueCount name="sideB_ILVF_count" min_residue_count="5" residue_types="ILE,LEU,VAL,PHE" residue_selector="crude_interface_chB" confidence="0"/>
+<ScoreType name="totalscore_MBF" scorefxn="sfxn" score_type="total_score" threshold="0" confidence="0" />
+    <ResidueCount name="res_count_all" max_residue_count="9999" confidence="0" />
+    <CalculatorFilter name="score_per_res" equation="score / rescount" threshold="-0.30" confidence="0"  >
+        <Var name="score" filter="totalscore_MBF"/>
+        <Var name="rescount" filter="res_count_all"/>
+    </CalculatorFilter>
+<SSPrediction name="psipred_conf" confidence="0" cmd="/home/brunette/src/psipred3.21/runpsipred_single" use_probability="1" use_svm="0" />
+<SSPrediction name="mismatch_probability" confidence="0" cmd="/software/psipred4/runpsipred_single" use_probability="1" mismatch_probability="1" use_svm="0" />
+    <TaskAwareScoreType name="hbscore" scorefxn="sfxn_design" score_type="approximate_buried_unsat_penalty" threshold="0" mode="total"  confidence="0" />
+    <worst9mer name="worst9mer" rmsd_lookup_threshold="0.4" confidence="0" />
+    <RotamerBoltzmannWeight2 name="RotamerBoltzmannWeight_hbnet_only" residue_selector="hbnet_resis" scorefxn="sfxn" probability_type="BOLTZMANN_SUM" score_type="MEAN_PROBABILITY"   confidence="0"/>
+    <RotamerBoltzmannWeight2 name="RotamerBoltzmannWeight_hbnet_neighborhood" residue_selector="around_hbnet_with_focus" scorefxn="sfxn" probability_type="BOLTZMANN_SUM" score_type="MEAN_PROBABILITY" confidence="0"/> 
+	</FILTERS>
+
+<SIMPLE_METRICS>
+            <SelectedResiduesPyMOLMetric name="selected_design" custom_type="design" residue_selector="design_selector" />
+            <SelectedResiduesPyMOLMetric name="selected_pack" custom_type="pack" residue_selector="pack_selector" />
+            <SelectedResiduesPyMOLMetric name="selected_lock" custom_type="lock" residue_selector="lock_selector" />
+            <SelectedResiduesPyMOLMetric name="hbnet_label" custom_type="hbnet_label" residue_selector="hbnet_resis"/>
+            <SelectedResiduesPyMOLMetric name="core" custom_type="core" residue_selector="core"/>
+            <SelectedResiduesPyMOLMetric name="boundary" custom_type="boundary" residue_selector="bdry"/>
+            <SelectedResiduesPyMOLMetric name="surface" custom_type="surface" residue_selector="surf"/>
+            <SelectedResiduesPyMOLMetric name="AB_interface" custom_type="AB_interface" residue_selector="AB_interface"/>
+          </SIMPLE_METRICS>
+
+
+	<MOVERS>
+
+<RunSimpleMetrics name="report_selectors" metrics="selected_design,selected_pack,selected_lock,core,boundary,surface,hbnet_label,AB_interface"/>
+<ConstraintSetMover name="add_hbnet_csts" add_constraints="true" cst_file="%%cst_file%%"/>
+		<CstInfoMover name="report_hb_constraints_before" cst_file="%%cst_file%%" prefix="before"/>
+    <CstInfoMover name="report_hb_constraints_after" cst_file="%%cst_file%%" prefix="after"/>
+		<AddConstraintsToCurrentConformationMover CA_only="true" coord_dev="2.0" name="add_coord_cst" use_distance_cst="0"/> # semi understand this
+
+
+
+    <PackRotamersMover name="repack_surface_up_elec" scorefxn="up_ele" task_operations="init,layer_design,restrict_PRO_GLY,current,arochi,lock,pack,pack_bdry,pack_core,disallow_non_abego_aas"/> 
+
+
+
+
+		<MinMover name="hardmin_cart" bb="1" bondangle="1" bondlength="1" cartesian="1" chi="1" jump="ALL" scorefxn="hard_cart" tolerance="0.0001" max_iter="1000" type="lbfgs_armijo_nonmonotone"/> #repack without HBNet constraints to see if the networks stay put
+		<PackRotamersMover name="repack" scorefxn="hard" task_operations="init,current,arochi,ex1_ex2,pack,lock,repack_only"/>
+		AddCompositionConstraintMover name="add_comp_file" filename="%%aacomp%%" selector="design_selector"/> ## why is this not a task operator? Because task operators are meant to work only with the packer, wherease these constraints don't direclty interact, thus it is more suitable for it to be a mover. The mover modifies the pose by "adding" rubber-band like constraints, and that can be more general than task operations. Task operations are meant to be absolutes. 
+		
+
+		<InterfaceAnalyzerMover name="interface_analyzer" interface_sc="1" pack_input="0" pack_separated="1" packstat="1" scorefxn="sfxn"/> #this used to be a sfxn with constraints but I don't think that was approprate. 
+		<ClearCompositionConstraintsMover name="clear_aa_comp_cst"/>
+
+
+
+
+
+		<FastDesign name="fdes1" scorefxn="sfxn_design" repeats="1" task_operations="init,current,arochi,ex1_ex2,restrict_PRO_GLY,only_exchange_LIV,layer_design,prune_buried_unsats,prune_bad_rotamers,pack,lock,hbnet_task,disallow_non_abego_aas,pack_surf" batch="false" ramp_down_constraints="false" cartesian="false" bondangle="true" bondlength="true" min_type="dfpmin_armijo_nonmonotone" relaxscript="/home/thuddy/th_home/TJ_rosetta_dev_backup/main/database/sampling/relax_scripts/MonomerDesign2019.txt" >
+								<MoveMap name="mm" bb="false" chi="false" jump="false">
+										<ResidueSelector selector="all" bb="false" chi="false"/>
+										<ResidueSelector selector="move_chi" bb="false" chi="true"/>
+										<ResidueSelector selector="move_bb_chi" bb="true" chi="true"/>
+								</MoveMap>
+						</FastDesign>
+
+
+
+
+
+
+	</MOVERS>
+
+	<PROTOCOLS>
+
+		
+
+		
+
+
+		#NEED TO identify HBNETS AND lock during packing
+		#NEED TO REFERENCE CSTS FROM ORIGINAL NETWORK PDB
+
+
+		#fancydesign with aa_comp and coord cst
+
+		#constrain the backbone to the current shape
+		Add mover="report_selectors"/>
+		Add mover="add_coord_cst"/>
+
+		Add mover="add_hbnet_csts"/>
+
+		#only allow 126 ala (original scaffold amt), 3 phe, 2 met. Put a cap on Threonine as well since I'm allowing it to go in the core. Allow up to 4 before ramp weight?
+		Add mover="add_comp_file"/> #REMEMBER this mover only calculates and applies the aa comp for the selected area
+
+		#It only allows design at non-hbnet core and boundary. It throws away bad rotamers wherever it can. It keeps isoleucine and leucine in place and allows everything else to design. 
+		Add mover="fdes1"/>
+
+		
+		#I didn't pack the surface during fast design, so let's do that now. 
+		Add mover="repack_surface_up_elec"/> 
+		
+		#remove that comp restriction
+		Add mover="clear_aa_comp_cst"/>
+
+
+		#minimize then repack without setting hbnet_task to see if network stays in place using cst_score filter
+
+		<Add mover="report_hb_constraints_before" report_at_end="false"/>
+		<Add mover="hardmin_cart"/> #don't need to clear constraints because min w/o constraints
+		<Add mover="repack"/>
+		<Add mover="report_hb_constraints_after" report_at_end="false"/>
+
+		
+
+
+
+
+
+
+
+		
+
+
+
+
+		#run a bunch of filters so we can sort stuff later. 
+		<Add filter="sideA_ILVF_count" report_at_end="false"/>
+		<Add filter="sideB_ILVF_count" report_at_end="false"/>
+		<Add filter="ala_count" report_at_end="false"/>
+
+		<Add filter="sbuns5.5_heavy_ball_1.1D" report_at_end="false"/>
+		<Add filter="vbuns5.5_heavy_ball_1.1D" report_at_end="false"/>
+		<Add filter="prepro" report_at_end="false"/>
+
+		<Add filter="AveDeg_ILV" report_at_end="false"/>
+		<Add filter="AveDeg_aro_apolar" report_at_end="false"/>
+		<Add filter="AveDeg_A_ILV" report_at_end="false"/>
+		<Add filter="AveDeg_B_ILV" report_at_end="false"/>
+		<Add filter="AveDeg_AB_interface_ILV" report_at_end="false"/>
+		<Add filter="ss_sc" report_at_end="false"/>
+		<Add filter="atomcount_ILV" report_at_end="false"/>
+		<Add filter="atomcount_norm_aro_apolar" report_at_end="false"/>
+		<Add filter="atomcount_A_ILV" report_at_end="false"/>
+		<Add filter="atomcount_B_ILV" report_at_end="false"/>
+		<Add filter="atomcount_AB_interface_ILV" report_at_end="false"/>
+
+		<Add filter="atomcount_AB_interface_ILV_chain" report_at_end="false"/>
+
+		<Add filter="atomcount_A1B1_interface_ILV_chain" report_at_end="false"/>
+		<Add filter="atomcount_A1B2_interface_ILV_chain" report_at_end="false"/>
+		<Add filter="atomcount_A1A_interface_ILV_chain" report_at_end="false"/>
+		<Add filter="atomcount_A2B1_interface_ILV_chain" report_at_end="false"/>
+		<Add filter="atomcount_A2B2_interface_ILV_chain" report_at_end="false"/>
+		<Add filter="atomcount_B1B_interface_ILV_chain" report_at_end="false"/>
+
+
+		<Add filter="cav_vol" report_at_end="false"/>
+		<Add filter="exposedhydrop" report_at_end="false"/>
+		<Add filter="network_holes" report_at_end="false"/>
+		<Add mover="interface_analyzer"/> #calculates binding energy? Is this working right because there's more than on interface? 
+		<Add filter="worst9mer" report_at_end="false"/>
+
+		<Add filter="hbscore" report_at_end="false"/>
+
+		<Add filter="mismatch_probability" report_at_end="false"/>
+		<Add filter="psipred_conf" report_at_end="false"/>
+		<Add filter="score_per_res" report_at_end="false"/>
+		<Add filter="NetCharge_chainA" report_at_end="false"/>
+		<Add filter="NetCharge_chainB" report_at_end="false"/>
+		<Add filter="interface_buried_sasa" report_at_end="false"/>
+		<Add filter="interface_hydrophobic_sasa" report_at_end="false"/>
+		<Add filter="interface_polar_sasa" report_at_end="false"/>
+		<Add filter="interface_holes" report_at_end="false"/>
+		<Add filter="ddg" report_at_end="false"/>
+		<Add filter="RotamerBoltzmannWeight_hbnet_only" report_at_end="false"/>
+		<Add filter="RotamerBoltzmannWeight_hbnet_neighborhood" report_at_end="false"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

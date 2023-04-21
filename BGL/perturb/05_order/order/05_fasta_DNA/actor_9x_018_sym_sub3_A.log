@@ -1,0 +1,52 @@
+constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=None]constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=AvoidPattern[0-594](patte...]                                                                                    objective:   0%|          | 0/2 [00:00<?, ?it/s, now=None]objective:   0%|          | 0/2 [00:00<?, ?it/s, now=CodonOptimize[0-594](e_co...]
+location:   0%|          | 0/135 [00:00<?, ?it/s, now=None][A
+location:   0%|          | 0/135 [00:00<?, ?it/s, now=0-3] [A
+location:   1%|          | 1/135 [00:00<00:27,  4.86it/s, now=222-225][A
+location:   1%|          | 1/135 [00:00<00:27,  4.86it/s, now=222-225][A
+location:  39%|███▊      | 52/135 [00:00<00:17,  4.86it/s, now=399-402][A
+location:  39%|███▊      | 52/135 [00:00<00:12,  6.89it/s, now=399-402][A
+location: 100%|██████████| 135/135 [00:00<00:00,  9.78it/s, now=399-402][A
+                                                                        [Aobjective:  50%|█████     | 1/2 [00:00<00:00,  1.75it/s, now=Minimize8merScore]   objective:  50%|█████     | 1/2 [00:00<00:00,  1.75it/s, now=Minimize8merScore]
+location:   0%|          | 0/1 [00:00<?, ?it/s, now=399-402][A
+location:   0%|          | 0/1 [00:00<?, ?it/s, now=0-594]  [A
+                                                          [A
+location:   0%|          | 0/1 [00:00<?, ?it/s, now=0-594][A
+                                                          [A                                                                               constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=AvoidPattern[0-594](patte...]constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=AvoidPattern[0-594](patte...]                                                                                    constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=AvoidPattern[0-594](patte...]                                                                                    attempting optimization of actor_9x_018_sym_sub3_A
+===> SUCCESS - all constraints evaluations pass
+✔PASS ┍ EnforceTranslation[0-594(+)]
+      │ All OK.
+✔PASS ┍ AvoidPattern[0-594](pattern:6xA)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:6xT)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:6xG)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:6xC)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidHairpins[0-594](stem_size:20, hairpin_window:200)
+      │ Score:         0. Locations: []
+✔PASS ┍ AvoidPattern[0-594](pattern:AGGAGG)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:GCTGGTGG)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:ATCTGTT)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:GGRGGT)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:XhoI(CTCGAG))
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:NdeI(CATATG))
+      │ Passed. Pattern not found !
+✔PASS ┍ EnforceGCContent[0-594](mini:0.40, maxi:0.65)
+      │ Passed !
+✔PASS ┍ EnforceGCContent[0-594](mini:0.25, maxi:0.65, window:50)
+      │ Passed !
+
+
+===> TOTAL OBJECTIVES SCORE:    -11.99
+     -10.1 ┍ CodonOptimize[0-594](e_coli) 
+           │ Codon opt. on window 0-594 scored -1.01E+01
+     -0.19 ┍ MinimizeKmerScore[0-594] 
+           │ Score: -0.19 (14 non-unique 8-mers)
+
+

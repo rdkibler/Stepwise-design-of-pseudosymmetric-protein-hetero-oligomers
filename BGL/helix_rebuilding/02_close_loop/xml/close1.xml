@@ -1,0 +1,16 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="hard" weights="beta_nov16"/>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>          
+    <Layer name="hbnet_core" select_core="true" core_cutoff="3.6" />
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+  </TASKOPERATIONS>
+  <MOVERS>
+    <ConnectChainsMover name="closer" chain_connections="[B+A,C]" loopLengthRange="2,5" RMSthreshold="0.5" resAdjustmentRangeSide1="-5,5" resAdjustmentRangeSide2="-5,5"/>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover="closer"/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>

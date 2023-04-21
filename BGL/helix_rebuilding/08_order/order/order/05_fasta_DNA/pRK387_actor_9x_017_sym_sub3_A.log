@@ -1,0 +1,67 @@
+constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=None]constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=AvoidPattern[0-594](patte...]                                                                                    objective:   0%|          | 0/2 [00:00<?, ?it/s, now=None]objective:   0%|          | 0/2 [00:00<?, ?it/s, now=CodonOptimize[0-594](e_co...]
+location:   0%|          | 0/146 [00:00<?, ?it/s, now=None][A
+location:   0%|          | 0/146 [00:00<?, ?it/s, now=0-3] [A
+location:   1%|          | 1/146 [00:00<00:29,  5.00it/s, now=93-96][A
+location:   1%|          | 1/146 [00:00<00:29,  5.00it/s, now=93-96][A
+location:  15%|█▌        | 22/146 [00:00<00:24,  5.00it/s, now=144-147][A
+location:  15%|█▌        | 22/146 [00:00<00:17,  6.99it/s, now=144-147][A
+location:  25%|██▌       | 37/146 [00:00<00:15,  6.99it/s, now=204-207][A
+location:  25%|██▌       | 37/146 [00:00<00:11,  9.58it/s, now=204-207][A
+location:  36%|███▋      | 53/146 [00:00<00:09,  9.58it/s, now=261-264][A
+location:  36%|███▋      | 53/146 [00:00<00:07, 12.96it/s, now=261-264][A
+location:  45%|████▌     | 66/146 [00:01<00:06, 12.96it/s, now=303-306][A
+location:  45%|████▌     | 66/146 [00:01<00:04, 16.91it/s, now=303-306][A
+location:  53%|█████▎    | 78/146 [00:01<00:04, 16.91it/s, now=354-357][A
+location:  53%|█████▎    | 78/146 [00:01<00:03, 21.51it/s, now=354-357][A
+location:  61%|██████    | 89/146 [00:01<00:02, 21.51it/s, now=414-417][A
+location:  61%|██████    | 89/146 [00:01<00:02, 26.23it/s, now=414-417][A
+location:  69%|██████▉   | 101/146 [00:01<00:01, 26.23it/s, now=459-462][A
+location:  69%|██████▉   | 101/146 [00:01<00:01, 31.26it/s, now=459-462][A
+location:  78%|███████▊  | 114/146 [00:01<00:01, 31.26it/s, now=519-522][A
+location:  78%|███████▊  | 114/146 [00:01<00:00, 36.57it/s, now=519-522][A
+location:  88%|████████▊ | 128/146 [00:02<00:00, 36.57it/s, now=570-573][A
+location:  88%|████████▊ | 128/146 [00:02<00:00, 42.11it/s, now=570-573][A
+                                                                        [Aobjective:  50%|█████     | 1/2 [00:02<00:02,  2.15s/it, now=Minimize8merScore]   objective:  50%|█████     | 1/2 [00:02<00:02,  2.15s/it, now=Minimize8merScore]
+location:   0%|          | 0/1 [00:00<?, ?it/s, now=570-573][A
+location:   0%|          | 0/1 [00:00<?, ?it/s, now=0-594]  [A
+                                                          [A
+location:   0%|          | 0/1 [00:00<?, ?it/s, now=0-594][A
+                                                          [A                                                                               constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=AvoidPattern[0-594](patte...]constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=AvoidPattern[0-594](patte...]                                                                                    constraint:   0%|          | 0/13 [00:00<?, ?it/s, now=AvoidPattern[0-594](patte...]                                                                                    attempting optimization of pRK387_actor_9x_017_sym_sub3_A
+===> SUCCESS - all constraints evaluations pass
+✔PASS ┍ EnforceTranslation[0-594(+)]
+      │ All OK.
+✔PASS ┍ AvoidPattern[0-594](pattern:6xA)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:6xT)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:6xG)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:6xC)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidHairpins[0-594](stem_size:20, hairpin_window:200)
+      │ Score:         0. Locations: []
+✔PASS ┍ AvoidPattern[0-594](pattern:AGGAGG)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:GCTGGTGG)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:ATCTGTT)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:GGRGGT)
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:XhoI(CTCGAG))
+      │ Passed. Pattern not found !
+✔PASS ┍ AvoidPattern[0-594](pattern:NdeI(CATATG))
+      │ Passed. Pattern not found !
+✔PASS ┍ EnforceGCContent[0-594](mini:0.40, maxi:0.65)
+      │ Passed !
+✔PASS ┍ EnforceGCContent[0-594](mini:0.25, maxi:0.65, window:50)
+      │ Passed !
+
+
+===> TOTAL OBJECTIVES SCORE:    -10.68
+     -9.47 ┍ CodonOptimize[0-594](e_coli) 
+           │ Codon opt. on window 0-594 scored -9.47E+00
+     -0.12 ┍ MinimizeKmerScore[0-594] 
+           │ Score: -0.12 (9 non-unique 8-mers)
+
+

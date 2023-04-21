@@ -1,0 +1,301 @@
+
+
+<ROSETTASCRIPTS>
+    ##RUN WITH: /home/bcov/ppi/builds/19-08-28/main/source/cmake/build_release_omp_hdf5/rosetta_scripts -holes:dalphaball /home/bcov/ppi/tutorial_build/main/source/external/DAlpahBall/DAlphaBall.gcc -indexed_structure_store:fragment_store /home/brunette/DBs/hdf5/ss_grouped_vall_helix_shortLoop.h5 -corrections::beta_nov16 true 
+	<SCOREFXNS>
+
+            <ScoreFunction name="sfxn_design" weights="beta_nov16" >
+                <Reweight scoretype="res_type_constraint" weight="2.0" />
+                <Reweight scoretype="aa_composition" weight="1.0" />
+                <Set use_hb_env_dep="true" />
+                <Reweight scoretype="approximate_buried_unsat_penalty" weight="17" />
+                <Set approximate_buried_unsat_penalty_burial_atomic_depth="3.5" />
+                <Set approximate_buried_unsat_penalty_hbond_energy_threshold="-1.0" />
+                <Set approximate_buried_unsat_penalty_natural_corrections1="true" />
+                <Set approximate_buried_unsat_penalty_hbond_bonus_cross_chain="-7" />
+                <Set approximate_buried_unsat_penalty_hbond_bonus_ser_to_helix_bb="1"/>
+                <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+                <Reweight scoretype="atom_pair_constraint" weight="1.0"/>
+                <Reweight scoretype="angle_constraint" weight="1.0"/>
+                <Reweight scoretype="dihedral_constraint" weight="1.0"/>
+                <Reweight scoretype="cart_bonded" weight="1.5"/>
+                <Reweight scoretype="pro_close" weight="0.0"/> #avoids double counting proline
+            </ScoreFunction>
+
+            <ScoreFunction name="sfxn" weights="beta_nov16" />
+            
+
+
+          </SCOREFXNS>
+          <RESIDUE_SELECTORS>
+
+            
+
+            
+            <True name="all"/>
+            <Chain name="chainA" chains="A"/>
+            <Chain name="chainB" chains="B"/>
+
+	        #a little wider than before
+            <SSElement name="crude_interface_chA" selection="n_term" to_selection="3,H" chain="A" />
+            <SSElement name="crude_interface_chB" selection="-3,H" to_selection="c_term" chain="B" />
+
+
+            <Or name="crude_AB_interface" selectors="crude_interface_chA,crude_interface_chB" />
+            <Not name="Not_crude_interface" selector="crude_AB_interface" />
+
+            
+
+
+
+
+            <ResidueName name="pro_and_gly_positions" residue_name3="PRO,GLY" />
+
+            <Layer name="surf" select_core="false" select_boundary="false" select_surface="true" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+            <Layer name="bdry" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+            <Layer name="core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+
+
+            <SecondaryStructure name="sheet" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="E"/>
+            <SecondaryStructure name="entire_loop" overlap="0" minH="3" minE="2" include_terminal_loops="true" use_dssp="true" ss="L"/>
+            <SecondaryStructure name="entire_helix" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="H"/>
+            <And name="helix_cap" selectors="entire_loop">
+                <PrimarySequenceNeighborhood lower="1" upper="0" selector="entire_helix"/>
+            </And>
+            <And name="helix_start" selectors="entire_helix">
+                <PrimarySequenceNeighborhood lower="0" upper="1" selector="helix_cap"/>
+            </And>
+            <And name="helix" selectors="entire_helix">
+                <Not selector="helix_start"/>
+            </And>
+            <And name="loop" selectors="entire_loop">
+                <Not selector="helix_cap"/>
+            </And>
+
+
+            <ResiduePDBInfoHasLabel name="hbnet_resis" property="HBNet"/>
+            	<Not name="not_hbnet" selector="hbnet_resis"/>
+		<And name="chainA_core_hbnet_resis" selectors="chainA,hbnet_resis,core"/>
+            <And name="chainB_core_hbnet_resis" selectors="chainB,hbnet_resis,core"/>
+
+            
+            <Neighborhood name="pre_design_around_hbnet" selector="hbnet_resis" distance="7.0" include_focus_in_subset="1"/>
+            <InterfaceByVector name="pre_design_interface" grp1_selector="crude_interface_chA" grp2_selector="crude_interface_chB"/>
+            <Or name="pre_design_selector" selectors="pre_design_around_hbnet,pre_design_interface"/>
+            <And name="design_selector" selectors="pre_design_selector,not_hbnet"/>
+            <Neighborhood name="pack_selector" selector="design_selector" distance="6.0" include_focus_in_subset="0"/>
+            <Not name="not_pack_selector" selector="pack_selector"/>
+            <Or name="not_lock_selector" selectors="design_selector,pack_selector"/>
+            <Not name="lock_selector" selector="not_lock_selector"/>
+
+            
+            <Or name="move_bb_chi" selectors="crude_AB_interface"/>
+            <Neighborhood name="move_chi" selector="move_bb_chi" distance="6.0" include_focus_in_subset="1"/>
+
+            
+
+
+          </RESIDUE_SELECTORS>
+          <TASKOPERATIONS>
+
+            <PruneBuriedUnsats name="prune_buried_unsats" allow_even_trades="false" atomic_depth_cutoff="3.5" minimum_hbond_energy="-1.0"/>
+            
+
+            #CAREFUL! THIS INDESCRIMINATELY TURNS OFF DESIGN ON ALL CONSTRAINED RESIS
+            ConstrainHBondNetwork name="hbnet_task" />
+            <OperateOnResidueSubset name="hbnet_task" selector="hbnet_resis" >
+                <PreventRepackingRLT/> #should it prevent repacking or just restrict to repacking? 
+            </OperateOnResidueSubset>
+
+            <OperateOnResidueSubset name="restrict_PRO_GLY" selector="pro_and_gly_positions">
+                <PreventRepackingRLT/>
+            </OperateOnResidueSubset>
+
+            <IncludeCurrent name="current"/>
+            <LimitAromaChi2 name="limitchi2" />
+            <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+
+            <OperateOnResidueSubset name="pack" selector="pack_selector" >
+                <RestrictToRepackingRLT/> 
+            </OperateOnResidueSubset>
+
+            <OperateOnResidueSubset name="lock" selector="lock_selector" >
+                <PreventRepackingRLT/> 
+            </OperateOnResidueSubset>
+
+
+            <DesignRestrictions name="layer_design">
+                <Action selector_logic="surf AND helix_start"  aas="DEHKPQR"/>
+                <Action selector_logic="surf AND helix"        aas="EHKQR"/>
+                <Action selector_logic="surf AND sheet"        aas="EHKNQRST"/>
+                <Action selector_logic="surf AND loop"         aas="DEGHKNPQRST"/>
+                <Action selector_logic="bdry AND helix_start" aas="ADEHIKLNPQRSTVWY"/>
+                <Action selector_logic="bdry AND helix"       aas="ADEHIKLNQRSTVWYM"/>
+                <Action selector_logic="bdry AND sheet"       aas="DEFHIKLNQRSTVWY"/>
+                <Action selector_logic="bdry AND loop"        aas="ADEFGHIKLNPQRSTVWY"/>
+                <Action selector_logic="core AND helix_start"     aas="AFILVWYP"/>
+                <Action selector_logic="core AND helix"           aas="AFILVWYM"/>
+                <Action selector_logic="core AND sheet"           aas="FILVWY"/>
+                <Action selector_logic="core AND loop"            aas="AFGILPVWYM"/>
+                <Action selector_logic="helix_cap"                aas="DNSTP"/>
+            </DesignRestrictions>
+
+            <RestrictToRepacking name="repack_only" />
+
+            <ProteinInterfaceDesign name="pack_long" design_chain1="0" design_chain2="0" jump="1" interface_distance_cutoff="15"/>
+
+            PruneBadRotamers name="prune_bad_rotamers" probability_cut="0.008" />
+          </TASKOPERATIONS>
+
+          <SIMPLE_METRICS>
+            <SelectedResiduesPyMOLMetric name="selected_designable" custom_type="design_selector" residue_selector="design_selector" />
+            <SelectedResiduesPyMOLMetric name="selected_pack" custom_type="pack" residue_selector="pack_selector" />
+            <SelectedResiduesPyMOLMetric name="selected_lock" custom_type="lock" residue_selector="lock_selector" />
+            <SelectedResiduesPyMOLMetric name="hbnet_label" custom_type="hbnet_label" residue_selector="hbnet_resis"/>
+            <SelectedResiduesPyMOLMetric name="core" custom_type="core" residue_selector="core"/>
+            <SelectedResiduesPyMOLMetric name="boundary" custom_type="boundary" residue_selector="bdry"/>
+            <SelectedResiduesPyMOLMetric name="surface" custom_type="surface" residue_selector="surf"/>
+
+
+            <TimingProfileMetric name="time" custom_type="time" hours="false"/>
+          </SIMPLE_METRICS>
+
+
+          <MOVERS>
+            FavorSequenceProfile name="favournative" weight="%%weight_original_seq%%" use_current="true" matrix="IDENTITY"/>
+            FavorSequenceProfile name="favournative" weight="%%weight_original_seq%%" use_native="true" matrix="IDENTITY"/> #it was decided that this doesn't help much
+            //was1.5
+
+            <AddConstraints name="add_csts">
+                CoordinateConstraintGenerator 
+                    name="pull_back_to_native" 
+                    sd="3"
+                    native="true"/>
+		<CoordinateConstraintGenerator
+		    name="local_movements_only"
+		    sd="0.3"
+		    residue_selector="Not_crude_interface"/>
+            </AddConstraints>
+            <ClearConstraintsMover name="clear_constraints" />
+
+
+
+            PackRotamersMover name="softpack" scorefxn="soft_cst" task_operations="layer_design,pack,lock,current,arochi,hbnet_task,restrict_PRO_GLY"/>
+            PackRotamersMover name="hardpack" scorefxn="hard_cst" task_operations="layer_design,pack,lock,current,arochi,ex1_ex2,hbnet_task,restrict_PRO_GLY"/>
+            TaskAwareMinMover name="hardmin_sconly" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" task_operations="pack,lock,restrict_PRO_GLY"/>
+            PackRotamersMover name="repack" scorefxn="hard_cst" task_operations="repack_only,lock,current,arochi,ex1_ex2"/> #does the hbnet fall apart? 
+
+            <RunSimpleMetrics name="report_selectors" metrics="selected_designable,selected_pack,selected_lock,core,boundary,surface,hbnet_label"/>
+            <RunSimpleMetrics name="report_time" metrics="time"/>
+
+		#should I switch to interfacedesign script?
+            <FastDesign name="fdes_hbnet" scorefxn="sfxn_design" repeats="1" task_operations="limitchi2,ex1_ex2,restrict_PRO_GLY,layer_design,prune_buried_unsats,pack,lock,hbnet_task" batch="false" ramp_down_constraints="false" cartesian="false" bondangle="true" bondlength="true" min_type="dfpmin_armijo_nonmonotone" relaxscript="/home/thuddy/th_home/TJ_rosetta_dev_backup/main/database/sampling/relax_scripts/MonomerDesign2019.txt" >
+                <MoveMap name="mm" bb="false" chi="false" jump="false">
+                    <ResidueSelector selector="all" bb="false" chi="false"/>
+                    <ResidueSelector selector="move_chi" bb="false" chi="true"/>
+                    <ResidueSelector selector="move_bb_chi" bb="true" chi="true"/>
+                </MoveMap>
+
+                #removed taskop prune_bad_rotamers
+                ##/home/bcov/sc/scaffold_comparison/relax_scripts/no_ref.rosettacon2018.beta_nov16.txt
+            </FastDesign>
+
+
+
+            <TaskAwareMinMover name="min" scorefxn="sfxn" bb="0" chi="1" task_operations="pack_long" />
+            <SwitchChainOrder name="cutB" chain_order="1" />
+            <SwitchChainOrder name="cutA" chain_order="2" />
+
+            <DumpPdb name="dump_pdb_1" fname="predes" scorefxn="sfxn" tag_time="1"/>
+
+            <DumpPdb name="dump_pdb_2" fname="postdes" scorefxn="sfxn" tag_time="1"/>
+
+            <ConstraintSetMover name="add_hbnet_csts" add_constraints="true" cst_file="%%cst_file%%"/>
+            <CstInfoMover name="report_hb_constraints_before" cst_file="%%cst_file%%" prefix="before"/>
+            <CstInfoMover name="report_hb_constraints_after" cst_file="%%cst_file%%" prefix="after"/>
+            
+
+
+
+
+          </MOVERS>
+          <FILTERS>
+
+            <ResidueCount name="spanning_core_hbnets_A" min_residue_count="1" residue_selector="chainA_core_hbnet_resis" confidence="1"/>
+            <ResidueCount name="spanning_core_hbnets_B" min_residue_count="1" residue_selector="chainB_core_hbnet_resis" confidence="1"/>
+
+            <DesignableResidues name="report_packable" task_operations="limitchi2,ex1_ex2,restrict_PRO_GLY,layer_design,prune_buried_unsats,pack,lock,hbnet_task" designable="0" packable="1"/>
+
+            <DesignableResidues name="report_designable" task_operations="limitchi2,ex1_ex2,restrict_PRO_GLY,layer_design,prune_buried_unsats,pack,lock,hbnet_task" designable="1" packable="0"/>
+            <Sasa name="interface_buried_sasa" confidence="0" />
+        
+            <Ddg name="ddg" threshold="-10" jump="1" repeats="5" repack="1" relax_mover="min" confidence="0" scorefxn="sfxn" task_operations="repack_only,current" />
+            
+            <ShapeComplementarity name="interface_sc" verbose="0" min_sc="0.55" write_int_area="1" write_median_dist="1" jump="1" confidence="0"/>
+
+
+
+
+
+
+            <BuriedUnsatHbonds name="sbuns5.5_heavy_ball_1.1D" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="sfxn" ignore_surface_res="false" print_out_info_to_pdb="true" confidence="0" use_ddG_style="true" burial_cutoff="0.01" dalphaball_sasa="true" probe_radius="1.1" atomic_depth_selection="5.5" atomic_depth_deeper_than="false" burial_cutoff_apo="0.2" atomic_depth_resolution="0.49" max_hbond_energy="1.5"/>
+            <BuriedUnsatHbonds name="vbuns5.5_heavy_ball_1.1D" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="sfxn"  ignore_surface_res="false" print_out_info_to_pdb="true" confidence="0" use_ddG_style="true" dalphaball_sasa="true" probe_radius="1.1" atomic_depth_selection="5.5" burial_cutoff="1000" burial_cutoff_apo="0.2" atomic_depth_apo_surface="5.5" atomic_depth_resolution="0.49" max_hbond_energy="1.5"/>
+            
+            <SSPrediction name="mismatch_probability" confidence="0" cmd="/software/psipred4/runpsipred_single" use_probability="1" mismatch_probability="1" use_svm="0" />
+            <MoveBeforeFilter name="psipred_A" mover="cutB" filter="mismatch_probability" confidence="0"/>
+            <MoveBeforeFilter name="psipred_B" mover="cutA" filter="mismatch_probability" confidence="0"/>
+            
+
+            
+
+
+
+
+
+            <worst9mer name="9mer" rmsd_lookup_threshold="0.4" confidence="0" />
+
+            <MoveBeforeFilter name="9mer_A" mover="cutB" filter="9mer" confidence="0"/>
+            <MoveBeforeFilter name="9mer_B" mover="cutA" filter="9mer" confidence="0"/>
+            <Holes name="core_holes" threshold="0.0" confidence="0"/>
+            <TaskAwareScoreType name="hbscore" scorefxn="sfxn_design" score_type="approximate_buried_unsat_penalty" threshold="0" mode="total"  confidence="0" />
+            <TaskAwareScoreType name="tot_score" scorefxn="sfxn" score_type="total_score" threshold="0" mode="total"  confidence="0" />
+            <MoveBeforeFilter name="score_A" mover="cutB" filter="tot_score" confidence="0"/>
+            <MoveBeforeFilter name="score_B" mover="cutA" filter="tot_score" confidence="0"/>
+
+
+          </FILTERS>
+          <PROTOCOLS>
+
+            #throw away things which are not acutally buried
+            <Add filter="spanning_core_hbnets_A"/>
+            <Add filter="spanning_core_hbnets_B"/>
+
+
+            Add mover="favournative"/> #return to native seq
+            <Add mover="add_csts"/> #keep things in place
+            <Add mover="add_hbnet_csts"/>
+            <Add mover="report_hb_constraints_before"/>
+            Add mover="dump_pdb_1"/>
+            <Add mover="report_selectors"/>
+            <Add filter="report_packable"/>
+            <Add filter="report_designable"/>
+            
+
+
+
+
+   		   <Add mover="fdes_hbnet"/>
+
+            <Add mover="report_hb_constraints_after"/>
+            <Add mover="clear_constraints"/>
+            
+
+
+
+
+            <Add mover="report_time"/>
+
+
+          </PROTOCOLS>
+        </ROSETTASCRIPTS>
+ 

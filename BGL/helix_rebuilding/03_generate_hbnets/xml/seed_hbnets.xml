@@ -1,0 +1,281 @@
+
+
+<ROSETTASCRIPTS>
+    ##RUN WITH: /home/bcov/ppi/builds/19-08-28/main/source/cmake/build_release_omp_hdf5/rosetta_scripts -holes:dalphaball /home/bcov/ppi/tutorial_build/main/source/external/DAlpahBall/DAlphaBall.gcc -indexed_structure_store:fragment_store /home/brunette/DBs/hdf5/ss_grouped_vall_helix_shortLoop.h5 -corrections::beta_nov16 true 
+
+    #REMOVED:-dunbrack_prob_buried 0.9 -dunbrack_prob_nonburied 0.9 -dunbrack_prob_buried_semi 0.9 -dunbrack_prob_nonburied_semi 0.9
+    <SCOREFXNS>
+        <ScoreFunction name="sfxn" weights="beta_nov16" />
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+        <True name="all"/>
+        <Chain name="chainA" chains="A"/> #local
+        <Chain name="chainB" chains="B"/> #local
+
+
+
+        <SSElement name="interface_chA" selection="-3,H,M" to_selection="c_term" chain="A" />
+        <SSElement name="interface_chB" selection="n_term" to_selection="3,H,M" chain="B" />
+
+
+
+        <Or name="AB_interface" selectors="interface_chA,interface_chB" />
+        <Not name="Not_interface" selector="AB_interface" />
+
+
+
+        <ResidueName name="pro_and_gly_positions" residue_name3="PRO,GLY" />
+        <ResidueName name="apolar" residue_name3="ALA,CYS,PHE,ILE,LEU,MET,THR,PRO,VAL,TRP,TYR" />
+        <Not name="polar" selector="apolar" />
+
+
+        InterfaceByVector name="hbnet_seed" cb_dist_cut="11" nearby_atom_cut="5.5" vector_angle_cut="75" vector_dist_cut="9" grp1_selector="interface_chA" grp2_selector="interface_chB"/>
+
+
+        <Or name="design_selector" selectors="AB_interface"/>
+        <Not name="not_design_selector" selector="design_selector"/>
+        <Neighborhood name="pack_selector" selector="design_selector" distance="8.0" include_focus_in_subset="0"/>
+        <Not name="not_pack_selector" selector="pack_selector"/>
+        <And name="lock_selector" selectors="not_pack_selector,not_design_selector"/>
+
+        
+
+        <Layer name="surface" select_core="false" select_boundary="false" select_surface="true" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+        <Layer name="deep_bdry" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="false" core_cutoff="6" surface_cutoff="35" ball_radius="2.5"/>
+        <Layer name="boundary" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+        <Layer name="core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+        <Layer name="deep_core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="false" core_cutoff="6" surface_cutoff="35" ball_radius="2.5"/>
+
+
+
+        Index name="hand_picked_core" resnums="4A,5A,7A,8A,10A,11A,12A,14A,15A,17A,18A,19A,21A,22A,34A,35A,37A,38A,41A,42A,45A,48A,49A,52A,61A,62A,64A,65A,67A,68A,69A,71A,72A,74A,75A,76A,78A,79A,91A,92A,94A,95A,98A,99A,102A,105A,106A,109A,118A,119A,121A,122A,124A,125A,126A,128A,129A,131A,132A,133A,135A,136A,148A,149A,151A,152A,155A,156A,159A,162A,163A,166A,175A,176A,178A,179A,181A,182A,183A,185A,186A,188A,189A,190A,192A,193A,205A,206A,208A,209A,212A,213A,216A,219A,220A,223A,232B,233B,235B,236B,238B,239B,240B,242B,243B,245B,246B,247B,249B,250B,262B,263B,265B,266B,269B,270B,273B,276B,277B,280B,289B,290B,292B,293B,295B,296B,297B,299B,300B,302B,303B,304B,306B,307B,319B,320B,322B,323B,326B,327B,330B,333B,334B,337B,346B,347B,349B,350B,352B,353B,354B,356B,357B,359B,360B,361B,363B,364B,376B,377B,379B,380B,383B,384B,387B,390B,391B,394B,403B,404B,406B,407B,409B,410B,411B,413B,414B,416B,417B,418B,420B,421B,433B,434B,436B,437B,440B,441B,444B,447B,448B,451B,460B,461B,463B,464B,466B,467B,468B,470B,471B,473B,474B,475B,477B,478B,490B,491B,493B,494B,497B,498B,501B,504B,505B,508B"/>
+        Index name="hand_picked_bdry" resnums="1A,3A,24A,25A,26A,30A,31A,39A,44A,46A,53A,56A,58A,60A,81A,82A,83A,87A,88A,96A,101A,103A,110A,113A,115A,117A,138A,139A,140A,144A,145A,153A,158A,160A,167A,170A,172A,174A,195A,196A,197A,201A,202A,210A,215A,217A,224A,227A,229B,231B,252B,253B,254B,258B,259B,267B,272B,274B,281B,284B,286B,288B,309B,310B,311B,315B,316B,324B,329B,331B,338B,341B,343B,345B,366B,367B,368B,372B,373B,381B,386B,388B,395B,398B,400B,402B,423B,424B,425B,429B,430B,438B,443B,445B,452B,455B,457B,459B,480B,481B,482B,486B,487B,495B,500B,502B,509B,512B"/>
+        Index name="hand_picked_surf" resnums="22A,6A,9A,13A,16A,20A,23A,27A,28A,29A,32A,33A,36A,40A,43A,47A,50A,51A,54A,55A,57A,59A,63A,66A,70A,73A,77A,80A,84A,85A,86A,89A,90A,93A,97A,100A,104A,107A,108A,111A,112A,114A,116A,120A,123A,127A,130A,134A,137A,141A,142A,143A,146A,147A,150A,154A,157A,161A,164A,165A,168A,169A,171A,173A,177A,180A,184A,187A,191A,194A,198A,199A,200A,203A,204A,207A,211A,214A,218A,221A,222A,225A,226A,230B,234B,237B,241B,244B,248B,251B,255B,256B,257B,260B,261B,264B,268B,271B,275B,278B,279B,282B,283B,285B,287B,291B,294B,298B,301B,305B,308B,312B,313B,314B,317B,318B,321B,325B,328B,332B,335B,336B,339B,340B,342B,344B,348B,351B,355B,358B,362B,365B,369B,370B,371B,374B,375B,378B,382B,385B,389B,392B,393B,396B,397B,399B,401B,405B,408B,412B,415B,419B,422B,426B,427B,428B,431B,432B,435B,439B,442B,446B,449B,450B,453B,454B,456B,458B,462B,465B,469B,472B,476B,479B,483B,484B,485B,488B,489B,492B,496B,499B,503B,506B,507B,510B,511B,513B"/>
+
+        Index name="hand_picked_hbnet_core" resnums="4A,7A,8A,10A,11A,14A,17A,18A,21A,461B,464B,468B,471B,475B,487B,490B,491B,494B,497B,498B,501B,504B,505B,508B"/>
+
+
+
+
+
+
+
+
+        Layer name="hbnet_core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="true" core_cutoff="5.5"/>
+        Layer name="hbnet_boundary" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="true" core_cutoff="5.5" surface_cutoff="2.0"/>
+
+
+
+        <SecondaryStructure name="sheet" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="E"/>
+        <SecondaryStructure name="entire_loop" overlap="0" minH="3" minE="2" include_terminal_loops="true" use_dssp="true" ss="L"/>
+        <SecondaryStructure name="entire_helix" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="H"/>
+        <And name="helix_cap" selectors="entire_loop">
+            <PrimarySequenceNeighborhood lower="1" upper="0" selector="entire_helix"/>
+        </And>
+        <And name="helix_start" selectors="entire_helix">
+            <PrimarySequenceNeighborhood lower="0" upper="1" selector="helix_cap"/>
+        </And>
+        <And name="helix" selectors="entire_helix">
+            <Not selector="helix_start"/>
+        </And>
+        <And name="loop" selectors="entire_loop">
+            <Not selector="helix_cap"/>
+        </And>
+
+        <PrimarySequenceNeighborhood name="for_struct" lower="1" upper="1" selector="entire_loop"/>
+
+        Not name="not_surf" selector="surface"/>
+
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>     
+        <PruneBuriedUnsats name="prune_buried_unsats" allow_even_trades="false" atomic_depth_cutoff="3.5" minimum_hbond_energy="-1.0"/>
+        <OperateOnResidueSubset name="pack" selector="pack_selector" >
+            <RestrictToRepackingRLT/> 
+        </OperateOnResidueSubset>
+
+        <OperateOnResidueSubset name="lock" selector="lock_selector" >
+            <PreventRepackingRLT/> 
+        </OperateOnResidueSubset>
+
+
+        <DesignRestrictions name="hbnet_layer_design">
+            <Action selector_logic="surface" aas=  "RHKDESTNQ"/>
+            <Action selector_logic="boundary" aas="RHKDESTNQWY"/>
+            <Action selector_logic="core" aas="HSTNQWY"/>
+        </DesignRestrictions>
+
+
+        <IncludeCurrent name="current" />
+        <LimitAromaChi2 name="limitchi2" chi2max="110" chi2min="70" include_trp="True" />
+        <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1" />
+
+    	<OperateOnResidueSubset name="restrict_PRO_GLY" selector="pro_and_gly_positions">
+    		<PreventRepackingRLT/>
+    	</OperateOnResidueSubset>
+
+    </TASKOPERATIONS>
+
+    <SIMPLE_METRICS>
+	<SelectedResiduesPyMOLMetric name="selected_designable" custom_type="design_selector" residue_selector="design_selector" />
+	<SelectedResiduesPyMOLMetric name="selected_pack" custom_type="pack" residue_selector="pack_selector" />
+	<SelectedResiduesPyMOLMetric name="selected_lock" custom_type="lock" residue_selector="lock_selector" />
+	<SelectedResiduesPyMOLMetric name="deep_core" custom_type="deep_core" residue_selector="deep_core"/>
+	<SelectedResiduesPyMOLMetric name="deep_bdry" custom_type="deep_bdry" residue_selector="deep_bdry"/>
+	<SelectedResiduesPyMOLMetric name="core" custom_type="core" residue_selector="core"/>
+	<SelectedResiduesPyMOLMetric name="boundary" custom_type="boundary" residue_selector="boundary"/>
+	<SelectedResiduesPyMOLMetric name="surface" custom_type="surface" residue_selector="surface"/>
+
+    </SIMPLE_METRICS>
+
+
+
+
+    <MOVERS>
+	<RunSimpleMetrics name="report_selectors" metrics="selected_designable,selected_pack,selected_lock,core,deep_core,boundary,deep_bdry,surface"/>
+        <SwitchChainOrder name="cutB" chain_order="1" />
+        <SwitchChainOrder name="cutA" chain_order="2" />
+    </MOVERS>
+
+
+
+    <FILTERS>
+        <BuriedUnsatHbonds name="sbuns5.5_heavy_ball_1.1D" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="sfxn" ignore_surface_res="false" print_out_info_to_pdb="true" confidence="0" use_ddG_style="true" burial_cutoff="0.01" dalphaball_sasa="true" probe_radius="1.1" atomic_depth_selection="5.5" atomic_depth_deeper_than="false" burial_cutoff_apo="0.2" atomic_depth_resolution="0.49" max_hbond_energy="1.5"/>
+        <BuriedUnsatHbonds name="vbuns5.5_heavy_ball_1.1D" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="sfxn"  ignore_surface_res="false" print_out_info_to_pdb="true" confidence="0" use_ddG_style="true" dalphaball_sasa="true" probe_radius="1.1" atomic_depth_selection="5.5" burial_cutoff="1000" burial_cutoff_apo="0.2" atomic_depth_apo_surface="5.5" atomic_depth_resolution="0.49" max_hbond_energy="1.5"/>
+        <SSPrediction name="mismatch_probability" confidence="0" cmd="/software/psipred4/runpsipred_single" use_probability="1" mismatch_probability="1" use_svm="0" />
+        <MoveBeforeFilter name="psipred_A" mover="cutB" filter="mismatch_probability" confidence="0"/>
+        <MoveBeforeFilter name="psipred_B" mover="cutA" filter="mismatch_probability" confidence="0"/>
+        
+    </FILTERS>
+
+
+    <MOVERS>
+	
+       
+
+        <ScoreMover name="score!" scorefxn="sfxn"/>
+        
+	### parameters to play with
+	#   hbnet_threshold () this is the most important factor. too positive and i'll get too many results (super redundant) but too negative and it'll throw everything away. So i guess mostly it's for controling redundancy. 
+	#   upper_score_limit (). can help weed out anything terrible
+	#   
+
+	#   can I speed up HBNet without sacrificing quality by adding prune_buried_unsats? 
+
+    #only find 2 in the core, but it must be good! 
+
+    #note! HBNet is incapable of finding only 2 residue networks. Find only 3 residue networks and look for networks with at least 1 core residue in each chain. 
+	#this is different from other versions of my script. because these newly sampled helices are farther out, I'll switch to the normal core
+	<HBNetStapleInterface 
+            scorefxn="sfxn" 
+            name="place_hbnet_seed" 
+            hb_threshold="-0.6" 
+            secondary_search="false"
+            min_helices_contacted_by_network="2" 
+            core_selector="core" 
+            show_task="1" 
+            store_subnetworks="1" 
+            verbose="0" 
+            no_heavy_unsats_allowed="1" 
+            write_network_pdbs="0" 
+            min_network_size="4" 
+            max_unsat_Hpol="0"
+            min_percent_hbond_capacity="0.62"
+            min_intermolecular_hbonds="2"
+            min_core_res="4" 
+            min_unique_networks="1"
+            max_networks_per_pose="3" 
+            write_cst_files="0" 
+            use_aa_dependent_weights="true" 
+            max_replicates_before_branch="1"
+            monte_carlo="true" 
+            seed_hbond_threshold="-0.4"
+            monte_carlo_seed_must_be_buried="1"
+            total_num_mc_runs="10000" 
+            task_operations="limitchi2,ex1_ex2,pack,lock,hbnet_layer_design" />
+
+HBNetStapleInterface
+            scorefxn="sfxn"
+            name="place_hbnet_seed"
+            hb_threshold="-0.9"
+            secondary_search="false"
+            min_helices_contacted_by_network="2"
+            core_selector="hand_picked_hbnet_core"
+            show_task="1"
+            store_subnetworks="0"
+            verbose="1"
+            no_heavy_unsats_allowed="1"
+            write_network_pdbs="0"
+            min_network_size="3"
+            max_network_size="4"
+            max_unsat_Hpol="0"
+            min_percent_hbond_capacity="0.6"
+            min_intermolecular_hbonds="1"
+            min_core_res="2"
+            min_unique_networks="1"
+            max_networks_per_pose="1"
+            write_cst_files="0"
+            use_aa_dependent_weights="true"
+            max_replicates_before_branch="0"
+            monte_carlo="true"
+            monte_carlo_seed_must_be_buried="1"
+            total_num_mc_runs="10000"
+            task_operations="limitchi2,ex1_ex2,pack,lock,hbnet_layer_design" />
+
+
+
+
+
+
+
+            #play around with min_percent_hbond_capacity
+
+            max_network_size="6"
+
+
+<MultiplePoseMover name="MPM_filter" max_input_poses="9999">
+        <ROSETTASCRIPTS>
+          <RESIDUE_SELECTORS>
+            <Chain name="chainA" chains="A"/>
+            <Chain name="chainB" chains="B"/>
+            <ResiduePDBInfoHasLabel name="hbnet_resis" property="HBNet"/>
+            <Layer name="surface" select_core="false" select_boundary="false" select_surface="true" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+            <Layer name="boundary" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+            <Layer name="core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+            <Layer name="deep_core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="false" core_cutoff="6" surface_cutoff="35" ball_radius="2.5"/>
+	    <And name="buried_hbnet" selectors="core,hbnet_resis"/>
+
+            <And name="chainA_core_hbnet_resis" selectors="chainA,hbnet_resis,core"/>
+            <And name="chainB_core_hbnet_resis" selectors="chainB,hbnet_resis,core"/>
+          </RESIDUE_SELECTORS>
+          <FILTERS>
+            <ResidueCount name="spanning_core_hbnets_A" min_residue_count="1" residue_selector="chainA_core_hbnet_resis" confidence="1"/>
+            <ResidueCount name="spanning_core_hbnets_B" min_residue_count="1" residue_selector="chainB_core_hbnet_resis" confidence="1"/>
+          </FILTERS>
+	  <MOVERS>
+		<AddResidueLabel name="label_buried_hbnets" residue_selector="buried_hbnet" label="buried_HBNet"/>
+	  </MOVERS>
+          <PROTOCOLS>
+            #throw away things which are not acutally buried
+            <Add filter="spanning_core_hbnets_A"/>
+            <Add filter="spanning_core_hbnets_B"/>
+	    <Add mover="label_buried_hbnets"/>
+          </PROTOCOLS>
+        </ROSETTASCRIPTS>
+      </MultiplePoseMover>
+
+
+
+    </MOVERS>
+
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+	<Add mover="score!"/>
+	<Add mover="report_selectors"/>
+<Add mover="place_hbnet_seed"/>
+<Add mover="MPM_filter"/>
+    </PROTOCOLS>
+    <OUTPUT />
+</ROSETTASCRIPTS>

@@ -1,0 +1,433 @@
+
+
+<ROSETTASCRIPTS>
+#this version is for the parametric design where some terminal helices
+#have no native sequence
+	<SCOREFXNS>
+            #this has all of Brian's HBNet designs stuff to hopefully improve buried unsats
+            <ScoreFunction name="sfxn_design" weights="beta_nov16">
+                <Reweight scoretype="res_type_constraint" weight="2.0" />
+                <Reweight scoretype="aa_composition" weight="1.0" />
+                <Set use_hb_env_dep="true" />
+                <Reweight scoretype="approximate_buried_unsat_penalty" weight="17" />
+                <Set approximate_buried_unsat_penalty_burial_atomic_depth="3.5" />
+                <Set approximate_buried_unsat_penalty_hbond_energy_threshold="-1.0" />
+                <Set approximate_buried_unsat_penalty_natural_corrections1="true" />
+                <Set approximate_buried_unsat_penalty_hbond_bonus_cross_chain="-7" />
+                <Set approximate_buried_unsat_penalty_hbond_bonus_ser_to_helix_bb="1"/>
+                <Reweight scoretype="hbond_sr_bb" weight="1.5"/>
+		<Reweight scoretype="coordinate_constraint" weight="1.0"/>
+                <Reweight scoretype="atom_pair_constraint" weight="1.0"/>
+                <Reweight scoretype="angle_constraint" weight="1.0"/>
+                <Reweight scoretype="dihedral_constraint" weight="1.0"/>
+                <Reweight scoretype="cart_bonded" weight="1.5"/>
+                <Reweight scoretype="pro_close" weight="0.0"/> #avoids double counting proline
+            </ScoreFunction>
+
+<!--
+            #I have a lot of structure to work through and I don't think I can tolerate the slowdowns from Brian's stuff
+            <ScoreFunction name="sfxn_design" weights="beta_nov16">
+                <Reweight scoretype="res_type_constraint" weight="2.0" />
+                <Reweight scoretype="aa_composition" weight="1.0" />
+		<Reweight scoretype="hbond_sr_bb" weight="1.5"/>
+                <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+                <Reweight scoretype="atom_pair_constraint" weight="1.0"/>
+                <Reweight scoretype="angle_constraint" weight="1.0"/>
+                <Reweight scoretype="dihedral_constraint" weight="1.0"/>
+                <Reweight scoretype="cart_bonded" weight="1.5"/>
+                <Reweight scoretype="pro_close" weight="0.0"/> #avoids double counting proline
+            </ScoreFunction>
+-->
+            <ScoreFunction name="sfxn" weights="beta_nov16"/>
+            
+
+
+
+
+		<ScoreFunction name="up_elec" weights="beta_nov16"> # for designing surface
+			Reweight scoretype="sap_constraint" weight="1.0"/>
+			<Reweight scoretype="coordinate_constraint" weight="1.0"/>
+                <Reweight scoretype="atom_pair_constraint" weight="1.0"/>
+                <Reweight scoretype="angle_constraint" weight="1.0"/>
+                <Reweight scoretype="dihedral_constraint" weight="1.0"/>
+                	<Reweight scoretype="fa_elec" weight="1.4"/>
+                	<Reweight scoretype="hbond_sc" weight="2.0" />
+                	<Reweight scoretype="res_type_constraint" weight="1.5"/> # For StructProfileMover
+                	<Reweight scoretype="netcharge" weight="1.0" />
+        		<Reweight scoretype="aa_composition" weight="1.0" /> # If you do use comp as well as netcharge, you'll need to change the comp file.
+		</ScoreFunction>
+
+
+
+
+
+
+          </SCOREFXNS>
+          <RESIDUE_SELECTORS>
+
+            
+
+            
+            <True name="all"/>
+            <Chain name="chainA" chains="A"/>
+            <Chain name="chainB" chains="B"/>
+
+	    <Index name="S154" resnums="154B"/> I like this serine. Gonna lock it
+
+	        #a little wider than before
+            <SSElement name="rebuilt_A" selection="n_term" to_selection="3,H,S" chain="A" />
+            <SSElement name="rebuilt_B" selection="2,H,E" to_selection="-2,H,S" chain="B" />
+            <Or name="rebuilt" selectors="rebuilt_A,rebuilt_B"/>
+            <Not name="original" selector="rebuilt"/>
+
+
+            Or name="crude_NC_interface" selectors="crude_interface_N,crude_interface_C" />
+            Not name="Not_crude_interface" selector="crude_NC_interface" />
+
+            
+
+
+            <ResidueName name="pro_and_gly_positions" residue_name3="PRO,GLY" />
+
+            <Layer name="surf" select_core="false" select_boundary="false" select_surface="true" use_sidechain_neighbors="true" core_cutoff="5.2" surface_cutoff="2.4"/>
+            <Layer name="bdry" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="true" core_cutoff="5.2" surface_cutoff="2.4"/>
+            <Layer name="core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="true" core_cutoff="5.2" surface_cutoff="2.4"/>
+
+            <SecondaryStructure name="sheet" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="E"/>
+            <SecondaryStructure name="entire_loop" overlap="0" minH="3" minE="2" include_terminal_loops="true" use_dssp="true" ss="L"/>
+            <SecondaryStructure name="entire_helix" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="H"/>
+            <And name="helix_cap" selectors="entire_loop">
+                <PrimarySequenceNeighborhood lower="1" upper="0" selector="entire_helix"/>
+            </And>
+            <And name="helix_start" selectors="entire_helix">
+                <PrimarySequenceNeighborhood lower="0" upper="1" selector="helix_cap"/>
+            </And>
+            <And name="helix" selectors="entire_helix">
+                <Not selector="helix_start"/>
+            </And>
+            <And name="loop" selectors="entire_loop">
+                <Not selector="helix_cap"/>
+            </And>
+	    <Not name="not_loop" selector="entire_loop"/>
+
+
+            #only allow design on the "interface" between the original regions and the rebuilt regions
+            <InterfaceByVector name="pre_designable_original" grp1_selector="rebuilt" grp2_selector="original"/>
+	    <And name="designable_original" selectors="pre_designable_original,original,core,not_loop"/>
+	    <Not name="pre_non_designable_original" selector="designable_original"/>
+	    <And name="non_designable_original" selectors="pre_non_designable_original,original"/>
+
+
+            ResiduePDBInfoHasLabel name="pre_hbnet_resis" property="HBNet"/>
+            <Index name="hbnet_resis" resnums="%%HBNet_resnums%%"/>
+            <Not name="not_hbnet" selector="hbnet_resis"/>
+	    <And name="core_not_hbnet" selectors="not_hbnet,core"/>
+            
+            <Neighborhood name="pre_design_around_hbnet" selector="hbnet_resis" distance="7.0" include_focus_in_subset="1"/>
+            Neighborhood name="pre_design_around_rebuilt" selector="rebuilt" distance="7.0" include_focus_in_subset="1"/>
+
+            Or name="pre_design_selector" selectors="pre_design_around_hbnet,pre_design_around_rebuilt"/>
+            
+
+
+	    #so this one is for the helix rebuilding (HR) version where I design the helices from scratch
+	    Or name="pre_design_selector" selectors="pre_design_around_hbnet,designable_original,rebuilt"/>
+	    #the NMP comes with sequence and it's a pretty reasonable sequence for this backbone, so let's change as little as possible
+	    <InterfaceByVector name="pre_design_interfaceAB" grp1_selector="chainA" grp2_selector="chainB"/>
+		#I read somewhere online (:eyeroll:) that the order that you declare grp1_selector and grp2_selector matters, so I'm taking covering my bases by picking both and combining them
+	    <InterfaceByVector name="pre_design_interfaceBA" grp1_selector="chainB" grp2_selector="chainA"/>
+            <Or name="pre_design_selector" selectors="pre_design_around_hbnet,pre_design_interfaceAB,pre_design_interfaceBA"/>
+
+
+
+
+	    <Not name="not_S154" selector="S154"/>
+            <And name="design_selector" selectors="pre_design_selector,not_hbnet,not_S154"/>
+
+	    #this was HR's pack_selector. I want to modify it a little to allow all of the "rebuilt" stuff to repack to accomodate movement in the interface
+            Neighborhood name="pack_selector" selector="design_selector" distance="6.0" include_focus_in_subset="0"/>
+            <Neighborhood name="around_and_rebuilt" selector="rebuilt OR design_selector" distance="6.0" include_focus_in_subset="1"/> ##ooo baby's first inline selector logic
+	    <Not name="not_design_selector" selector="design_selector"/>
+	    <And name="pack_selector" selectors="around_and_rebuilt,not_design_selector,not_S154"/>
+
+            <Not name="not_pack_selector" selector="pack_selector"/>
+            <Or name="not_lock_selector" selectors="design_selector,pack_selector"/>
+            <Not name="lock_selector" selector="not_lock_selector"/>
+
+	    #for NMP, probably gonna leave this as-is. It'll increase runtime, but I'd like to allow things to move around and "settle" a bit
+            <PrimarySequenceNeighborhood name="rebuilt_and_flanking" selector="rebuilt" lower="2" upper="2"/>
+            <Or name="move_bb_chi" selectors="rebuilt_and_flanking"/>
+            <Neighborhood name="move_chi" selector="move_bb_chi" distance="6.0" include_focus_in_subset="1"/>
+
+            
+
+
+          </RESIDUE_SELECTORS>
+
+            <RESIDUE_LEVEL_TASK_OPERATIONS>
+                    <PreventRepackingRLT name="PreventRepacking" />
+                    <RestrictToRepackingRLT name="RestrictToRepacking" />
+                    RestrictAbsentCanonicalAASExceptNativeRLT  name="RestrictAbsentCanonicalAASExceptNativeRLT " />
+
+
+
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT1_surf_and_helix_start"   aas="DEHKPQR"               />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT2_surf_and_helix"         aas="EHKQR"                 />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT3_surf_and_sheet"         aas="EHKNQRST"              />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT4_surf_and_loop"          aas="DEGHKNPQRST"           />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT5_bdry_and_helix_start"   aas="ADEHIKLNPQRSTVWY"      />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT6_bdry_and_helix"         aas="ADEHIKLNQRSTVWYM"      />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT7_bdry_and_sheet"         aas="DEFHIKLNQRSTVWY"       />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT8_bdry_and_loop"          aas="ADEFGHIKLNPQRSTVWY"    />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT9_core_and_helix_start"   aas="AFILVPWY"              />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT10_core_and_helix"        aas="AFILVMHSTQNWY"              />#added HSTQN to allow hbond satisfaction ## RK210123 think about turning this off w/ no more brian hbnet scorefxn. OK did it
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT11_core_and_sheet"        aas="FILVWY"                />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT12_core_and_loop"         aas="AFGILPVMWY"            />
+                    <RestrictAbsentCanonicalAASExceptNativeRLT  name="RLT13_helix_cap"             aas="DNSTP"                 />
+            </RESIDUE_LEVEL_TASK_OPERATIONS>
+
+
+          <TASKOPERATIONS>
+
+            <PruneBuriedUnsats name="prune_buried_unsats" allow_even_trades="false" atomic_depth_cutoff="3.5" minimum_hbond_energy="-1.0"/>
+            
+
+            #CAREFUL! THIS INDESCRIMINATELY TURNS OFF DESIGN ON ALL CONSTRAINED RESIS
+            ConstrainHBondNetwork name="hbnet_task" />
+            <OperateOnResidueSubset name="hbnet_task" selector="hbnet_resis" >
+		#previously I used prevent repacking on hbnets, but I think I'll allow it this time to give me a slight chance at a little more backbone movement (Monte Carlo permitting)
+                <RestrictToRepackingRLT/> #should it prevent repacking or just restrict to repacking? 
+            </OperateOnResidueSubset>
+
+            <OperateOnResidueSubset name="restrict_PRO_GLY" selector="pro_and_gly_positions">
+                <PreventRepackingRLT/>
+            </OperateOnResidueSubset>
+
+            <IncludeCurrent name="current"/>
+            <LimitAromaChi2 name="limitchi2" />
+            <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+
+            <OperateOnResidueSubset name="pack" selector="pack_selector" >
+                <RestrictToRepackingRLT/> 
+            </OperateOnResidueSubset>
+
+            <OperateOnResidueSubset name="lock" selector="lock_selector" >
+                <PreventRepackingRLT/> 
+            </OperateOnResidueSubset>            
+
+            <OperateOnResidueSubset name="lock_core" selector="core" >
+                <PreventRepackingRLT/> 
+            </OperateOnResidueSubset>
+            <OperateOnResidueSubset name="lock_orig" selector="original" >
+                <PreventRepackingRLT/> 
+            </OperateOnResidueSubset>
+            <OperateOnResidueSubset name="pack_core" selector="core" >
+                <RestrictToRepackingRLT/> 
+            </OperateOnResidueSubset>
+            <OperateOnResidueSubset name="pack_bdry" selector="bdry" >
+                <RestrictToRepackingRLT/> 
+            </OperateOnResidueSubset>
+
+	    
+
+            <DesignRestrictions name="layer_design">
+                <Action selector_logic="surf AND helix_start"  residue_level_operations="RLT1_surf_and_helix_start"/>
+                <Action selector_logic="surf AND helix"        residue_level_operations="RLT2_surf_and_helix"/>
+                <Action selector_logic="surf AND sheet"        residue_level_operations="RLT3_surf_and_sheet"/>
+                <Action selector_logic="surf AND loop"         residue_level_operations="RLT4_surf_and_loop"/>
+                <Action selector_logic="bdry AND helix_start"  residue_level_operations="RLT5_bdry_and_helix_start"/>
+                <Action selector_logic="bdry AND helix"        residue_level_operations="RLT6_bdry_and_helix"/>
+                <Action selector_logic="bdry AND sheet"        residue_level_operations="RLT7_bdry_and_sheet"/>
+                <Action selector_logic="bdry AND loop"         residue_level_operations="RLT8_bdry_and_loop"/>
+                <Action selector_logic="core AND helix_start"  residue_level_operations="RLT9_core_and_helix_start"/>
+                <Action selector_logic="core AND helix"        residue_level_operations="RLT10_core_and_helix"/> 
+                <Action selector_logic="core AND sheet"        residue_level_operations="RLT11_core_and_sheet"/>
+                <Action selector_logic="core AND loop"         residue_level_operations="RLT12_core_and_loop"/>
+                <Action selector_logic="helix_cap"             residue_level_operations="RLT13_helix_cap"/>
+            </DesignRestrictions>
+
+            <ConsensusLoopDesign name="disallow_nonnative"/>
+
+            <RestrictToRepacking name="repack_only" />
+
+            <ProteinInterfaceDesign name="pack_long" design_chain1="0" design_chain2="0" jump="1" interface_distance_cutoff="15"/>
+
+            PruneBadRotamers name="prune_bad_rotamers" probability_cut="0.008" />
+          </TASKOPERATIONS>
+
+          <SIMPLE_METRICS>
+            <SelectedResiduesPyMOLMetric name="selected_designable" custom_type="design_selector" residue_selector="design_selector" />
+            <SelectedResiduesPyMOLMetric name="selected_pack" custom_type="pack" residue_selector="pack_selector" />
+            <SelectedResiduesPyMOLMetric name="selected_lock" custom_type="lock" residue_selector="lock_selector" />
+            <SelectedResiduesPyMOLMetric name="selected_rebuilt" custom_type="rebuilt" residue_selector="rebuilt" />
+            <SelectedResiduesPyMOLMetric name="hbnet_label" custom_type="hbnet_label" residue_selector="hbnet_resis"/>
+            <SelectedResiduesPyMOLMetric name="core" custom_type="core" residue_selector="core"/>
+            <SelectedResiduesPyMOLMetric name="boundary" custom_type="boundary" residue_selector="bdry"/>
+            <SelectedResiduesPyMOLMetric name="surface" custom_type="surface" residue_selector="surf"/>
+
+
+		<SapScoreMetric name="sap_score" />
+
+            <TimingProfileMetric name="time" custom_type="time" hours="false"/>
+          </SIMPLE_METRICS>
+
+
+          <MOVERS>
+            FavorSequenceProfile name="favornative" weight="%%weight_original_seq%%" use_current="true" matrix="IDENTITY"/>
+            FavorSequenceProfile name="favornative" weight="%%weight_original_seq%%" use_native="true" matrix="IDENTITY"/> #it was decided that this doesn't help much
+            //was1.5
+
+            <AddConstraints name="add_csts">
+                CoordinateConstraintGenerator 
+                    name="pull_back_to_native" 
+                    sd="3"
+                    native="true"/>
+		<CoordinateConstraintGenerator
+		    name="local_movements_only"
+		    sd="0.2"
+		    residue_selector="original"/>
+            </AddConstraints>
+            <ClearConstraintsMover name="clear_constraints" />
+
+
+
+            PackRotamersMover name="softpack" scorefxn="soft_cst" task_operations="layer_design,pack,lock,current,arochi,hbnet_task,restrict_PRO_GLY"/>
+            PackRotamersMover name="hardpack" scorefxn="hard_cst" task_operations="layer_design,pack,lock,current,arochi,ex1_ex2,hbnet_task,restrict_PRO_GLY"/>
+            TaskAwareMinMover name="hardmin_sconly" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" task_operations="pack,lock,restrict_PRO_GLY"/>
+            PackRotamersMover name="repack" scorefxn="hard_cst" task_operations="repack_only,lock,current,arochi,ex1_ex2"/> #does the hbnet fall apart? 
+
+            <RunSimpleMetrics name="report_selectors_pre" metrics="selected_designable,selected_pack,selected_lock,core,boundary,surface,hbnet_label,selected_rebuilt" prefix="pre_"/>
+            <RunSimpleMetrics name="report_selectors_intermediate" metrics="selected_designable,selected_pack,selected_lock,core,boundary,surface,hbnet_label,selected_rebuilt" prefix="intermediate_"/>
+            <RunSimpleMetrics name="report_selectors_post" metrics="selected_designable,selected_pack,selected_lock,core,boundary,surface,hbnet_label,selected_rebuilt" prefix="post_"/>
+
+            <RunSimpleMetrics name="report_time" metrics="time"/>
+
+		#I'm not doing a ton of design so let's up this to 2 repeats so that the backbone can settle even more
+            <FastDesign name="fdes_hbnet" scorefxn="sfxn_design" repeats="2" task_operations="prune_buried_unsats,lock,pack,layer_design,disallow_nonnative,hbnet_task,restrict_PRO_GLY,ex1_ex2,limitchi2" batch="false" ramp_down_constraints="false" cartesian="true" bondangle="true" bondlength="true" min_type="dfpmin_armijo_nonmonotone" relaxscript="/home/thuddy/th_home/TJ_rosetta_dev_backup/main/database/sampling/relax_scripts/MonomerDesign2019.txt" >
+                <MoveMap name="mm" bb="false" chi="false" jump="false">
+                    <ResidueSelector selector="all" bb="false" chi="false"/>
+                    <ResidueSelector selector="move_chi" bb="false" chi="true"/>
+                    <ResidueSelector selector="move_bb_chi" bb="true" chi="true"/>
+                </MoveMap>
+
+                #removed taskop prune_bad_rotamers
+                ##/home/bcov/sc/scaffold_comparison/relax_scripts/no_ref.rosettacon2018.beta_nov16.txt
+            </FastDesign>
+
+
+	    <AddCompositionConstraintMover name="control_bdry_trp" filename="extras/bdry_trp.comp" selector="bdry"/>
+	    <AddCompositionConstraintMover name="control_bdry_tyr" filename="extras/bdry_tyr.comp" selector="bdry"/>
+	    <AddCompositionConstraintMover name="control_met" filename="extras/all_met.comp" selector="all"/>
+
+
+            <TaskAwareMinMover name="min" scorefxn="sfxn" bb="0" chi="1" task_operations="pack_long" />
+            <SwitchChainOrder name="cutB" chain_order="1" />
+            <SwitchChainOrder name="cutA" chain_order="2" />
+
+            <DumpPdb name="dump_pdb_1" fname="predes" scorefxn="sfxn" tag_time="1"/>
+
+            <DumpPdb name="dump_pdb_2" fname="postdes" scorefxn="sfxn" tag_time="1"/>
+
+            <ConstraintSetMover name="add_hbnet_csts" add_constraints="true" cst_file="%%cst_file%%"/>
+            <CstInfoMover name="report_hb_constraints_before" cst_file="%%cst_file%%" prefix="before"/>
+            <CstInfoMover name="report_hb_constraints_after" cst_file="%%cst_file%%" prefix="after"/>
+            <DetectSymmetry name="detect_symmetry"/>
+
+		<DumpPdb name="dump_post_fastdesign" fname="dump_post_fastdesign.pdb"/>
+            <ScoreMover name="score_clean" scorefxn="sfxn"/>
+
+	    <InterfaceAnalyzerMover name="interface_analyzer" scorefxn="sfxn" pack_separated="true"/>
+		<AddSapConstraintMover name="add_sap" speed="lightning" sap_goal="0" penalty_per_sap="3"/> 
+		<AddNetChargeConstraintMover name="net_charge_A" filename="/home/rdkibler/scripts/resurface/under_minus_two.charge" selector="chainA" />
+		<AddNetChargeConstraintMover name="net_charge_B" filename="/home/rdkibler/scripts/resurface/under_minus_two.charge" selector="chainB" />
+		<PackRotamersMover name="resurface" scorefxn="up_elec" task_operations="prune_buried_unsats,lock_core,pack_bdry,lock_orig,layer_design,disallow_nonnative,hbnet_task,restrict_PRO_GLY,ex1_ex2,limitchi2"/>
+		<MinMover name="min_sc" scorefxn="sfxn" chi="true" bb="false" jump="false" cartesian="false" type="dfpmin_armijo_nonmonotone" tolerance="0.0001" max_iter="200" />
+
+          </MOVERS>
+          <FILTERS>
+
+            ResidueCount name="spanning_core_hbnets_A" min_residue_count="1" residue_selector="chainA_core_hbnet_resis" confidence="1"/>
+            ResidueCount name="spanning_core_hbnets_B" min_residue_count="1" residue_selector="chainB_core_hbnet_resis" confidence="1"/>
+
+            <DesignableResidues name="report_packable" task_operations="limitchi2,ex1_ex2,restrict_PRO_GLY,layer_design,pack,lock,hbnet_task,disallow_nonnative" designable="0" packable="1"/>
+
+            <DesignableResidues name="report_designable" task_operations="limitchi2,ex1_ex2,restrict_PRO_GLY,layer_design,pack,lock,hbnet_task,disallow_nonnative" designable="1" packable="0"/>
+            <Sasa name="interface_buried_sasa" confidence="0" />
+        
+            Ddg name="ddg" threshold="-10" jump="1" repeats="5" repack="1" relax_mover="min" confidence="0" scorefxn="sfxn" task_operations="repack_only,current" />
+            <Ddg name="ddg" threshold="-10" jump="1" repeats="5" repack="1" confidence="0" scorefxn="sfxn" task_operations="repack_only,current" />
+            
+            <ShapeComplementarity name="interface_sc" verbose="0" min_sc="0.55" write_int_area="1" write_median_dist="1" jump="1" confidence="0"/>
+            <SSShapeComplementarity name="ss_sc" verbose="true"/>
+
+            <BuriedUnsatHbonds name="sbuns5.5_heavy_ball_1.1D" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="sfxn" ignore_surface_res="false" print_out_info_to_pdb="true" confidence="0" use_ddG_style="true" burial_cutoff="0.01" dalphaball_sasa="true" probe_radius="1.1" atomic_depth_selection="5.5" atomic_depth_deeper_than="false" burial_cutoff_apo="0.2" atomic_depth_resolution="0.49" max_hbond_energy="1.5"/>
+            <BuriedUnsatHbonds name="vbuns5.5_heavy_ball_1.1D" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="sfxn"  ignore_surface_res="false" print_out_info_to_pdb="true" confidence="0" use_ddG_style="true" dalphaball_sasa="true" probe_radius="1.1" atomic_depth_selection="5.5" burial_cutoff="1000" burial_cutoff_apo="0.2" atomic_depth_apo_surface="5.5" atomic_depth_resolution="0.49" max_hbond_energy="1.5"/>
+            
+            <SSPrediction name="mismatch_probability" confidence="0" cmd="/software/psipred4/runpsipred_single" use_probability="1" mismatch_probability="1" use_svm="0" />
+
+            worst9mer name="9mer" rmsd_lookup_threshold="0.4" confidence="0" />
+
+
+            <Holes name="core_holes" threshold="0.0" confidence="0"/>
+            <TaskAwareScoreType name="hbscore" scorefxn="sfxn_design" score_type="approximate_buried_unsat_penalty" threshold="0" mode="total"  confidence="0" />
+            <TaskAwareScoreType name="tot_score" scorefxn="sfxn" score_type="total_score" threshold="0" mode="total"  confidence="0" />
+
+		<NetCharge name="charge_chA" chain="1" confidence="0"/>
+		<NetCharge name="charge_chB" chain="2" confidence="0"/>
+		<NetCharge name="charge_all" confidence="0"/>
+
+          </FILTERS>
+          <PROTOCOLS>
+
+            <Add mover="add_csts"/> #keep things in place
+            <Add mover="add_hbnet_csts"/>
+            <Add mover="report_hb_constraints_before"/>
+            <Add mover="control_met"/>
+            <Add mover="control_bdry_trp"/>
+            <Add mover="control_bdry_tyr"/>
+            <Add mover="report_selectors_pre"/>
+            <Add filter="report_packable" report_at_end="false"/>
+            <Add filter="report_designable" report_at_end="false"/>
+
+            <Add mover="fdes_hbnet"/>
+            Add mover="report_selectors_intermediate"/>
+
+	    Add mover="dump_post_fastdesign"/>	
+		<Add metrics="sap_score" labels="pre_resurfacing_sap"/>
+		Add mover="add_sap"/> #with something already this "designed", I don't think I need sap
+		<Add mover="net_charge_A"/>
+		<Add mover="net_charge_B"/>
+		<Add mover="resurface"/>
+
+		<Add mover="min_sc"/>
+            Add mover="report_selectors_post"/>
+		<Add metrics="sap_score" labels="post_resurfacing_sap"/>
+
+            <Add mover="report_hb_constraints_after"/>
+            <Add mover="clear_constraints"/>
+
+            <Add mover="score_clean"/>
+		<Add filter="charge_chA" report_at_end="false"/>
+		<Add filter="charge_chB" report_at_end="false"/>
+		<Add filter="charge_all" report_at_end="false"/>
+            
+	    <Add mover="interface_analyzer"/>
+            <Add filter="mismatch_probability" report_at_end="false"/>
+            <Add filter="core_holes" report_at_end="false"/>
+            <Add filter="interface_buried_sasa" report_at_end="false"/>
+            <Add filter="ddg" report_at_end="false"/>
+            <Add filter="interface_sc" report_at_end="false"/>
+            <Add filter="ss_sc" report_at_end="false"/>
+            <Add filter="sbuns5.5_heavy_ball_1.1D" report_at_end="false"/>
+            <Add filter="vbuns5.5_heavy_ball_1.1D" report_at_end="false"/>
+            <Add filter="hbscore" report_at_end="false"/>
+            <Add filter="tot_score" report_at_end="false"/> 
+
+
+
+
+            <Add mover="report_time"/>
+
+          </PROTOCOLS>
+        </ROSETTASCRIPTS>
+ 

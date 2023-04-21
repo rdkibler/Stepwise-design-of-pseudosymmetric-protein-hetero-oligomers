@@ -1,0 +1,190 @@
+<ROSETTASCRIPTS>
+
+    #IF I AM TO RERUN THIS, ADD AA COMP
+          <SCOREFXNS>
+            <ScoreFunction name="hard" weights="beta_nov16"/>
+	    <ScoreFunction name="soft_cst" weights="beta_nov16_soft">
+                <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+                <Reweight scoretype="atom_pair_constraint" weight="1.0"/>
+                <Reweight scoretype="angle_constraint" weight="1.0"/> #not sure how many of these extra csts are necessary
+                <Reweight scoretype="dihedral_constraint" weight="1.0"/>
+                <Reweight scoretype="res_type_constraint" weight="1.0"/>
+            </ScoreFunction>
+            <ScoreFunction name="hard_cst" weights="beta_nov16_cst"/>
+
+
+
+          </SCOREFXNS>
+          <RESIDUE_SELECTORS>
+
+	<True name="all"/>
+        <Chain name="chainA" chains="A"/> #local
+        <Chain name="chainB" chains="B"/> #local
+
+        <SSElement name="interface_chA" selection="-3,H" to_selection="c_term" chain="A" />
+        <SSElement name="interface_chB" selection="n_term" to_selection="3,H" chain="B" />
+	<ResiduePDBInfoHasLabel name="hbnet_resis" property="HBNet"/>
+        <Or name="AB_interface" selectors="interface_chA,interface_chB" />
+        <Not name="Not_interface" selector="AB_interface" />
+
+	<Neighborhood name="move_chi" selector="AB_interface" distance="6.0" include_focus_in_subset="1"/>
+
+        <ResidueName name="pro_and_gly_positions" residue_name3="PRO,GLY" />
+
+        <Or name="design_selector" selectors="AB_interface"/>
+        <Not name="not_design_selector" selector="design_selector"/>
+        <Neighborhood name="pack_selector" selector="design_selector" distance="8.0" include_focus_in_subset="0"/>
+        <Not name="not_pack_selector" selector="pack_selector"/>
+        <And name="lock_selector" selectors="not_pack_selector,not_design_selector"/>
+
+        <Layer name="surface" select_core="false" select_boundary="false" select_surface="true" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+	<Or name="surf" selectors="surface"/>
+        <Layer name="boundary" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+        <Or name="bdry" selectors="boundary"/>
+	<Layer name="core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="false" core_cutoff="20" surface_cutoff="35" ball_radius="2.5"/>
+
+        <SecondaryStructure name="sheet" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="E"/>
+        <SecondaryStructure name="entire_loop" overlap="0" minH="3" minE="2" include_terminal_loops="true" use_dssp="true" ss="L"/>
+        <SecondaryStructure name="entire_helix" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="H"/>
+        <And name="helix_cap" selectors="entire_loop">
+            <PrimarySequenceNeighborhood lower="1" upper="0" selector="entire_helix"/>
+        </And>
+        <And name="helix_start" selectors="entire_helix">
+            <PrimarySequenceNeighborhood lower="0" upper="1" selector="helix_cap"/>
+        </And>
+        <And name="helix" selectors="entire_helix">
+            <Not selector="helix_start"/>
+        </And>
+        <And name="loop" selectors="entire_loop">
+            <Not selector="helix_cap"/>
+        </And>
+	<And name="buried_hbnet" selectors="core,hbnet_resis"/>
+
+          </RESIDUE_SELECTORS>
+          <TASKOPERATIONS>
+
+
+	<OperateOnResidueSubset name="pack" selector="pack_selector" >
+            <RestrictToRepackingRLT/>
+        </OperateOnResidueSubset>
+
+        <OperateOnResidueSubset name="lock" selector="lock_selector" >
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+
+	<OperateOnResidueSubset name="lock2" selector="Not_interface" >
+		<PreventRepackingRLT/>
+	</OperateOnResidueSubset>
+
+        <IncludeCurrent name="current" />
+        <LimitAromaChi2 name="limitchi2" chi2max="110" chi2min="70" include_trp="True" />
+
+        <OperateOnResidueSubset name="restrict_PRO_GLY" selector="pro_and_gly_positions">
+                <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+
+
+
+	    <OperateOnResidueSubset name="hbnet_task" selector="hbnet_resis" >
+                <PreventRepackingRLT/> #should it prevent repacking or just restrict to repacking?
+            </OperateOnResidueSubset>
+
+            <RestrictToRepacking name="repack_only" />
+            <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+
+
+	<DesignRestrictions name="layer_design">
+                <Action selector_logic="surf AND helix_start"  aas="DEHKPQR"/>
+                <Action selector_logic="surf AND helix"        aas="EHKQR"/>
+                <Action selector_logic="surf AND sheet"        aas="EHKNQRST"/>
+                <Action selector_logic="surf AND loop"         aas="DEGHKNPQRST"/>
+                <Action selector_logic="bdry AND helix_start" aas="ADEHIKLNPQRSTVWY"/>
+                <Action selector_logic="bdry AND helix"       aas="ADEHIKLNQRSTVWYM"/>
+                <Action selector_logic="bdry AND sheet"       aas="DEFHIKLNQRSTVWY"/>
+                <Action selector_logic="bdry AND loop"        aas="ADEFGHIKLNPQRSTVWY"/>
+                <Action selector_logic="core AND helix_start"     aas="AFILVWYP"/>
+                <Action selector_logic="core AND helix"           aas="AFILVWYM"/>
+                <Action selector_logic="core AND sheet"           aas="FILVWY"/>
+                <Action selector_logic="core AND loop"            aas="AFGILPVWYM"/>
+                <Action selector_logic="helix_cap"                aas="DNSTP"/>
+            </DesignRestrictions>
+
+
+
+          </TASKOPERATIONS>
+          <MOVERS>
+            <PackRotamersMover name="softpack" scorefxn="soft_cst" task_operations="layer_design,pack,lock,current,limitchi2,hbnet_task,restrict_PRO_GLY"/>
+            <PackRotamersMover name="hardpack" scorefxn="hard_cst" task_operations="layer_design,pack,lock,current,limitchi2,ex1_ex2,hbnet_task,restrict_PRO_GLY"/>
+            <MinMover name="hardmin_sconly" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" >
+		<MoveMap name="mm" bb="false" chi="false" jump="false">
+                    <ResidueSelector selector="all" bb="false" chi="false"/>
+                    <ResidueSelector selector="move_chi" bb="false" chi="true"/>
+                </MoveMap>
+	    </MinMover>
+            <MinMover name="hardmin_sconly_no_cst" scorefxn="hard" chi="1" bb="0" bondangle="0" bondlength="0" >
+		<MoveMap name="mm" bb="false" chi="false" jump="false">
+                    <ResidueSelector selector="all" bb="false" chi="false"/>
+                    <ResidueSelector selector="move_chi" bb="false" chi="true"/>
+                </MoveMap>
+	    </MinMover>
+            <PackRotamersMover name="repack_no_cst" scorefxn="hard" task_operations="repack_only,ex1_ex2,current,limitchi2,lock2" />
+
+           <ConstraintSetMover name="add_hbnet_csts" add_constraints="true" cst_file="%%cst_file%%"/>
+            <CstInfoMover name="report_hb_constraints_before" cst_file="%%cst_file%%" prefix="before"/>
+            <CstInfoMover name="report_hb_constraints_after" cst_file="%%cst_file%%" prefix="after"/>
+	    <ClearConstraintsMover name="clear_constraints" />
+	<ScoreMover name="score_with_csts" scorefxn="hard_cst" verbose="true"/>
+<AddResidueLabel name="label_buried_hbnets_again" residue_selector="buried_hbnet" label="buried_HBNet_2"/>
+          </MOVERS>
+
+	<FILTERS>
+	      <ScoreType name="cst" score_type="atom_pair_constraint" threshold="100" confidence="0"/>
+	      <ScoreType name="cst_before" score_type="atom_pair_constraint" threshold="100" confidence="0"/>
+	      <ScoreType name="cst_after" score_type="atom_pair_constraint" threshold="100" confidence="0"/>
+	      
+	      Delta name="delta_cst" filter="cst" reference_pdb="%%nativ%%"/>
+	      <EnzScore name="cst_score" score_type="cstE" scorefxn="hard_cst" whole_pose="1" energy_cutoff="1" confidence="0"/>
+	      
+	      <ResidueCount name="AA_count" max_residue_count="4" residue_types="ALA" confidence="0"/>
+	      <BuriedUnsatHbonds2 name="new_buns" scorefxn="hard" cutoff="20" confidence="0"/>
+	      <BuriedUnsatHbonds name="vbuns5.5_heavy_ball_1.1D" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="hard"  ignore_surface_res="false" print_out_info_to_pdb="true" confidence="0" use_ddG_style="true" dalphaball_sasa="true" probe_radius="1.1" atomic_depth_selection="5.5" burial_cutoff="1000" burial_cutoff_apo="0.2" atomic_depth_apo_surface="5.5" atomic_depth_resolution="0.49" max_hbond_energy="1.5" />
+		<Sasa name="interface_buried_sasa" confidence="0" />
+		<Sasa name="interface_polar_sasa" confidence="0" polar="True" />
+		<Sasa name="interface_hydrophobic_sasa" confidence="0" hydrophobic="True" />	
+	</FILTERS>
+
+          <PROTOCOLS>
+	    <Add mover="score_with_csts"/>
+	    <Add mover="add_hbnet_csts"/>
+	    <Add filter="cst_before" report_at_end="false"/>
+            <Add mover="report_hb_constraints_before"/>
+
+	    #do a poor man's relax with constraints (no bb movement)
+       <Add mover="softpack"/>
+       <Add mover="hardmin_sconly"/>
+       <Add mover="hardpack"/>
+<Add mover="label_buried_hbnets_again"/>
+	    
+            #copy pose
+
+	    #analytical minimize and repack without constraints to determine hbnet quality
+            <Add mover="hardmin_sconly_no_cst" />
+            <Add mover="repack_no_cst" />
+	    <Add mover="score_with_csts"/>
+	    <Add filter="cst_after" report_at_end="false"/>
+            <Add filter="AA_count" report_at_end="false"/>
+            <Add filter="cst_score" report_at_end="false"/>
+	    <Add filter="new_buns" report_at_end="false"/>
+	    <Add filter="vbuns5.5_heavy_ball_1.1D" report_at_end="false"/>
+            Add filter="delta_cst" report_at_end="false"/>
+
+	    <Add mover="report_hb_constraints_after"/>
+            <Add mover="clear_constraints"/>
+
+	<Add filter="interface_buried_sasa" report_at_end="false"/>
+  <Add filter="interface_hydrophobic_sasa" report_at_end="false"/>
+  <Add filter="interface_polar_sasa" report_at_end="false"/>
+
+          </PROTOCOLS>
+	<OUTPUT scorefxn="hard"/>
+</ROSETTASCRIPTS>

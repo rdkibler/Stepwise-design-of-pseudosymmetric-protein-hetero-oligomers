@@ -1,0 +1,101 @@
+LOCUS       Exported                2912 bp ds-DNA     circular SYN 04-OCT-2019
+DEFINITION  synthetic circular DNA.
+ACCESSION   .
+VERSION     .
+KEYWORDS    .
+SOURCE      synthetic DNA construct
+  ORGANISM  synthetic DNA construct
+REFERENCE   1  (bases 1 to 2912)
+  AUTHORS   .
+  TITLE     Direct Submission
+  JOURNAL   Exported Friday, Oct 4, 2019 from SnapGene Viewer 4.3.10
+            https://www.snapgene.com
+FEATURES             Location/Qualifiers
+     source          1..2912
+                     /organism="synthetic DNA construct"
+                     /label=source
+     source          1781..1825
+                     /label=source
+     rep_origin      17..605
+                     /label=colE1
+     promoter        633..651
+                     /label=T7 prom
+                     /label=T7\prom
+     CDS             713..1861
+                     /codon_start=1
+                     /label=GENE_PRODUCT
+                     /translation="MEKKIWSHPQFEKGGSSKGEELFTGVVPILVELDGDVNGHKFSVR
+                     GEGEGDATIGKLTLKFICTTGKLPVPWPTLVTTLTYGVQCFSRYPDHMKRHDFFKSAMP
+                     EGYVQERTISFKDDGKYKTRAVVKFEGDTLVNRIELKGTDFKEDGNILGHKLEYNFNSH
+                     NVYITADKQKNGIKANFTVRHNVEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQTVL
+                     SKDPNEKGTRDHMVLHEYVNAAGITGGGSGSGGGSGSGGGSGSGGGSGSGGGSGSGTEK
+                     RLLEEAERAHREQKEIIKKAQELHRRLEEIVRQSGSSEEAKKEAKKILEEIRELSKRSL
+                     ELLREILYLSQEQKGSGGSGGGGSGGSSSGGVTGYRLFEEIL"
+     CDS             713..760
+                     /label=CAT StrepII GS
+     CDS             761..1453
+                     /label=sfGFP
+     CDS             1454..1543
+                     /label=GGGSGSx5 30AA Linker
+     CDS             1484..1780
+                     /label=DOMESTICATOR_INSERT
+     CDS             1781..1825
+                     /label=smBiT GS15 Linker
+     CDS             1826..1861
+                     /label=114 (nanoLuc part 2)
+     primer_bind     1847..1870
+                     /label=smBiT_f
+     misc_feature    complement(1992..2807)
+                     /label=kan2 marker
+                     /label=kan2\marker
+ORIGIN
+        1 agatcaaagg atcttcttga gatccttttt ttctgcgcgt aatctgctgc ttgcaaacaa
+       61 aaaaaccacc gctaccagcg gtggtttgtt tgccggatca agagctacca actctttttc
+      121 cgaaggtaac tggcttcagc agagcgcaga taccaaatac tgttcttcta gtgtagccgt
+      181 agttaggcca ccacttcaag aactctgtag caccgcctac atacctcgct ctgctaatcc
+      241 tgttaccagt ggctgctgcc agtggcgata agtcgtgtct taccgggttg gactcaagac
+      301 gatagttacc ggataaggcg cagcggtcgg gctgaacggg gggttcgtgc acacagccca
+      361 gcttggagcg aacgacctac accgaactga gatacctaca gcgtgagcta tgagaaagcg
+      421 ccacgcttcc cgaagggaga aaggcggaca ggtatccggt aagcggcagg gtcggaacag
+      481 gagagcgcac gagggagctt ccagggggaa acgcctggta tctttatagt cctgtcgggt
+      541 ttcgccacct ctgacttgag cgtcgatttt tgtgatgctc gtcagggggg cggagcctat
+      601 ggaaaaacgc cagcaacgcg atcccgcgaa attaatacga ctcactatag ggagaccaca
+      661 acggtttccc tctagaaata attttgttta actttaagaa ggagatatac atatggagaa
+      721 aaaaatctgg agccatccgc agttcgaaaa aggcggatcc agcaaaggtg aagaactgtt
+      781 taccggcgtt gtgccgattc tggtggaact ggatggcgat gtgaacggtc acaaattcag
+      841 cgtgcgtggt gaaggtgaag gcgatgccac gattggcaaa ctgacgctga aatttatctg
+      901 caccaccggc aaactgccgg tgccgtggcc gacgctggtg accaccctga cctatggcgt
+      961 tcagtgtttt agtcgctatc cggatcacat gaaacgtcac gatttcttta aatctgcaat
+     1021 gccggaaggc tatgtgcagg aacgtacgat tagctttaaa gatgatggca aatataaaac
+     1081 gcgcgccgtt gtgaaatttg aaggcgatac cctggtgaac cgcattgaac tgaaaggcac
+     1141 ggattttaaa gaagatggca atatcctggg ccataaactg gaatacaact ttaatagcca
+     1201 taatgtttat attacggcgg ataaacagaa aaatggcatc aaagcgaatt ttaccgttcg
+     1261 ccataacgtt gaagatggca gtgtgcagct ggcagatcat tatcagcaga ataccccgat
+     1321 tggtgatggt ccggtgctgc tgccggataa tcattatctg agcacgcaga ccgttctgtc
+     1381 taaagatccg aacgaaaaag gcacgcggga ccacatggtt ctgcacgaat atgtgaatgc
+     1441 ggcaggtatt acgggggggg gcagtggctc gggcggtggc tcgggttcag gcggggggag
+     1501 tggatctggc ggcgggagtg ggagtggcgg cggcagcggg agcggcaccg aaaagcgtct
+     1561 gctggaagaa gcggagcgtg cgcatcgtga acaaaaagaa atcatcaaga aagcgcaaga
+     1621 actgcatcgc cgtctggagg aaatcgtgcg tcagagcggt agcagcgagg aagcgaagaa
+     1681 agaggcgaag aaaatcctgg aggaaattcg tgaactgagc aagcgtagcc tggagctgct
+     1741 gcgtgaaatt ctgtacctga gccaagagca gaaaggtagc ggcggaagcg gggggggagg
+     1801 ttctggtggt tcctcctcgg gaggggttac cgggtatcgt ttattcgagg agatcttgta
+     1861 agtcgaccgg ctgctaacaa agcccgaaag gaagctgagt tggctgctgc caccgctgag
+     1921 caataactag cataacccct tggggcctct aaacgggtct tgaggggttt tttgctgaaa
+     1981 gccaattctg attagaaaaa ctcatcgagc atcaaatgaa actgcaattt attcatatca
+     2041 ggattatcaa taccatattt ttgaaaaagc cgtttctgta atgaaggaga aaactcaccg
+     2101 aggcagttcc ataggatggc aagatcctgg tatcggtctg cgattccgac tcgtccaaca
+     2161 tcaatacaac ctattaattt cccctcgtca aaaataaggt tatcaagtga gaaatcacca
+     2221 tgagtgacga ctgaatccgg tgagaatggc aaaagcttat gcatttcttt ccagacttgt
+     2281 tcaacaggcc agccattacg ctcgtcatca aaatcactcg catcaaccaa accgttattc
+     2341 attcgtgatt gcgcctgagc gagacgaaat acgcgatcgc tgttaaaagg acaattacaa
+     2401 acaggaatcg aatgcaaccg gcgcaggaac actgccagcg catcaacaat attttcacct
+     2461 gaatcaggat attcttctaa tacctggaat gctgttttcc cggggatcgc agtggtgagt
+     2521 aaccatgcat catcaggagt acggataaaa tgcttgatgg tcggaagagg cataaattcc
+     2581 gtcagccagt ttagtctgac catctcatct gtaacatcat tggcaacgct acctttgcca
+     2641 tgtttcagaa acaactctgg cgcatcgggc ttcccataca atcgatagat tgtcgcacct
+     2701 gattgcccga cattatcgcg agcccattta tacccatata aatcagcatc catgttggaa
+     2761 tttaatcgcg gcttcgagca agacgtttcc cgttgaatat ggctcataac accccttgta
+     2821 ttactgttta tgtaagcaga cagttttatt gttcatgatg atatattttt atcttgtgca
+     2881 atgtaacatc agagattttg agacacaacg tg
+//

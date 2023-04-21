@@ -1,0 +1,154 @@
+
+
+<ROSETTASCRIPTS>
+    ##RUN WITH: 
+	///-holes:dalphaball /home/bcov/ppi/tutorial_build/main/source/external/DAlpahBall/DAlphaBall.gcc 
+	///-indexed_structure_store:fragment_store /home/brunette/DBs/hdf5/ss_grouped_vall_helix_shortLoop.h5 
+	-corrections::beta_nov16 true 
+
+    <SCOREFXNS>
+        <ScoreFunction name="sfxn" weights="beta_nov16"/>
+        <ScoreFunction name="sfxn_cart" weights="beta_nov16_cart"/>
+
+        <ScoreFunction name="sfxn_bb_perterb" weights="beta_nov16">
+            <Reweight scoretype="coordinate_constraint" weight="5.0"/> #play with this
+        </ScoreFunction>
+
+        <ScoreFunction name="sfxn_bb_perterb_cart" weights="beta_nov16_cart">
+            <Reweight scoretype="coordinate_constraint" weight="5.0"/> #play with this
+        </ScoreFunction>
+
+        <ScoreFunction name="sfxn_bb_perterb_cart_soft" weights="beta_nov16_soft">
+            <Reweight scoretype="coordinate_constraint" weight="5.0"/> #play with this
+	    <Reweight scoretype="pro_close" weight="0.0"/>
+	    <Reweight scoretype="cart_bonded" weight="0.5"/>
+        </ScoreFunction>
+
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+        <True name="all"/>
+        
+	<Chain name="chainA" chains="A"/>
+	<Chain name="chainB" chains="B"/>
+
+	<Index name="interface_A" resnums="1-33"/>
+	<Index name="interface_B" resnums="100-174"/>
+
+	<Or name="interface" selectors="interface_A,interface_B"/>
+        <Not name="not_interface" selector="interface"/>
+        <Not name="not_interface_A" selector="interface_A"/>
+        <Not name="not_interface_B" selector="interface_B"/>        
+
+        <Or name="design_selector" selectors="interface_A,interface_B"/>
+        <Not name="not_design_selector" selector="design_selector"/>
+
+        <Neighborhood name="pack_selector" selector="design_selector" distance="8.0" include_focus_in_subset="0"/>
+        <Not name="not_pack_selector" selector="pack_selector"/>
+        <And name="lock_selector" selectors="not_pack_selector,not_design_selector"/>
+
+    	<And name="pack_A_selector" selectors="chainA,pack_selector"/>
+    	<And name="pack_B_selector" selectors="chainB,pack_selector"/>
+
+    	<And name="design_A_selector" selectors="chainA,design_selector"/>
+    	<And name="design_B_selector" selectors="chainB,design_selector"/>
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>
+        <OperateOnResidueSubset name="lock" selector="lock_selector">
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+
+        <OperateOnResidueSubset name="vify" selector="all">
+            <RestrictAbsentCanonicalAASRLT aas="V"/>
+        </OperateOnResidueSubset>
+
+    </TASKOPERATIONS>
+
+    <MOVERS>
+
+        <ClearConstraintsMover name="clear_constraints" />
+        <AddConstraints name="add_csts">
+            <CoordinateConstraintGenerator name="constrain" residue_selector="not_design_selector"/>
+        </AddConstraints>
+
+        <ScoreMover name="score!" scorefxn="sfxn"/>
+
+        <VirtualRoot name="apply_vroot" removable="1" remove="0"/>
+     	<VirtualRoot name="remove_vroot" removable="1" remove="1"/>
+
+        <AtomTree name="change_foldtree" fold_tree_file="%%ft_file%%"/>
+        <AtomTree name="reset_foldtree" simple_ft="1"/>
+
+        <PackRotamersMover name="polyV" scorefxn="sfxn" task_operations="vify,lock"/>
+
+        <DumpPdb name="check"/>
+
+        #previous version used 0.6 for pertscale. i think i might want to make this a little crazier.
+        #I also want to play around with turning off the constraints that pull it back to the native conformation
+        
+        #prev nmodes=5, perscale=0.6, mm=false
+
+
+	#let's try again doing it all at once
+	#and relaxmode has 3 options: relax, min, and extrapolate. I think min is still wise, but extrapolate might be fun
+        <NormalModeRelax name="normal_modes"
+                cartesian="true"
+                centroid="false"
+                nmodes="%%nmodes%%"
+                mix_modes="%%mm%%" 
+                pertscale="%%pertscale%%"
+                randomselect="true"
+                scorefxn="sfxn_bb_perterb_cart_soft"
+                relaxmode="min" 
+                cartesian_minimize="true">
+                <MoveMap name="mm" bb="false" chi="false" jump="false">
+                    <ResidueSelector selector="all" bb="false" chi="false"/>
+                    <ResidueSelector selector="pack_selector" bb="false" chi="true"/>
+                    <ResidueSelector selector="design_selector" bb="true" chi="true"/>
+                </MoveMap>
+        </NormalModeRelax>      
+
+
+        <MultiplePoseMover name="MPM_finish" max_input_poses="4000">
+		<ROSETTASCRIPTS>
+	        	<SCOREFXNS>
+                        	<ScoreFunction name="sfxn" weights="beta_nov16" />
+                        </SCOREFXNS>
+			<MOVERS>
+                                <ScoreMover name="score!" scorefxn="sfxn"/>
+                                <ClearConstraintsMover name="clear_constraints" />
+                                <SimpleThreadingMover name="restore_sequence" start_position="1" thread_sequence="%%fasta%%"/>
+			</MOVERS>
+                        <PROTOCOLS>
+                                <Add mover="clear_constraints" />
+                                <Add mover="score!"/>
+                                <Add mover="restore_sequence"/>
+                        </PROTOCOLS>
+		</ROSETTASCRIPTS>
+	</MultiplePoseMover>
+
+
+
+    </MOVERS>
+
+
+
+
+
+
+    <PROTOCOLS>
+        <Add mover="change_foldtree"/>
+
+        <Add mover="add_csts"/>
+
+        <Add mover="score!"/>
+
+        <Add mover="polyV"/>
+        Add mover="check"/>
+
+        <Add mover="normal_modes"/>
+        <Add mover="MPM_finish"/>
+
+    </PROTOCOLS>
+</ROSETTASCRIPTS>

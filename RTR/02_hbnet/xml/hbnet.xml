@@ -1,0 +1,226 @@
+
+
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        <ScoreFunction name="sfxn" weights="beta_nov16"/>
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+        <True name="all"/>
+        <Chain name="chainA" chains="A"/> #local
+        <Chain name="chainB" chains="B"/> #local
+
+        <Layer name="surface" select_core="false" select_boundary="false" select_surface="true" use_sidechain_neighbors="true" core_cutoff="%%core_cutoff%%" surface_cutoff="%%surface_cutoff%%"/>
+        <Layer name="deep_bdry" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="true" core_cutoff="%%deep_core_cutoff%%" surface_cutoff="%%deep_surface_cutoff%%"/>
+        <Layer name="boundary" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="true" core_cutoff="%%core_cutoff%%" surface_cutoff="%%surface_cutoff%%"/>
+        <Layer name="core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="true" core_cutoff="%%core_cutoff%%" surface_cutoff="%%surface_cutoff%%"/>
+        <Layer name="deep_core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="true" core_cutoff="%%deep_core_cutoff%%" surface_cutoff="%%deep_surface_cutoff%%"/>
+
+
+	#rk 201224 these selections may want to be adjusted for efficiency
+        <SSElement name="interface_chA" selection="n_term" to_selection="3,H" chain="A" />
+        <SSElement name="interface_chB" selection="3,H" to_selection="6,H" chain="B" />
+
+
+        <Or name="AB_interface" selectors="interface_chA,interface_chB" />
+        <Not name="Not_interface" selector="AB_interface" />
+        
+        <InterfaceByVector name="permissive_start" cb_dist_cut="11.0" nearby_atom_cut="5.5" vector_angle_cut="90.0" vector_dist_cut="9.0" grp1_selector="interface_chA" grp2_selector="interface_chB"/>
+	<And name="start" selectors="permissive_start,core"/>
+        
+
+        <ResidueName name="pro_and_gly_positions" residue_name3="PRO,GLY" />
+        ResidueName name="apolar" residue_name3="ALA,CYS,PHE,ILE,LEU,MET,THR,PRO,VAL,TRP,TYR" />
+        Not name="polar" selector="apolar" />
+
+
+	#Due to the fraying I saw in the RK603 structure, I don't want hbnets touching the ends of terminal helices. We only have the nterm of chain A to worry about
+	<SSElement name="chA_nterm_no_hbnet" selection="n_term" to_selection="1,H,M" chain="A"/>
+	<Not name="not_chA_nterm_no_hbnet" selector="chA_nterm_no_hbnet"/>
+
+	<Or name="core_or_bdry" selectors="core,boundary"/>
+        <And name="design_selector" selectors="core_or_bdry,AB_interface,not_chA_nterm_no_hbnet"/>
+        <Not name="not_design_selector" selector="design_selector"/>
+        Neighborhood name="pack_selector" selector="design_selector" distance="8.0" include_focus_in_subset="0"/>
+        Not name="not_pack_selector" selector="pack_selector"/>
+        And name="lock_selector" selectors="not_pack_selector,not_design_selector"/>
+        <And name="lock_selector" selectors="not_design_selector"/>
+
+  
+
+
+
+        <SecondaryStructure name="sheet" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="E"/>
+        <SecondaryStructure name="entire_loop" overlap="0" minH="3" minE="2" include_terminal_loops="true" use_dssp="true" ss="L"/>
+        <SecondaryStructure name="entire_helix" overlap="0" minH="3" minE="2" include_terminal_loops="false" use_dssp="true" ss="H"/>
+        <And name="helix_cap" selectors="entire_loop">
+            <PrimarySequenceNeighborhood lower="1" upper="0" selector="entire_helix"/>
+        </And>
+        <And name="helix_start" selectors="entire_helix">
+            <PrimarySequenceNeighborhood lower="0" upper="1" selector="helix_cap"/>
+        </And>
+        <And name="helix" selectors="entire_helix">
+            <Not selector="helix_start"/>
+        </And>
+        <And name="loop" selectors="entire_loop">
+            <Not selector="helix_cap"/>
+        </And>
+
+        <PrimarySequenceNeighborhood name="for_struct" lower="1" upper="1" selector="entire_loop"/>
+
+
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>     
+        <PruneBuriedUnsats name="prune_buried_unsats" allow_even_trades="false" atomic_depth_cutoff="3.5" minimum_hbond_energy="-1.0"/>
+
+        <OperateOnResidueSubset name="lock" selector="lock_selector" >
+            <PreventRepackingRLT/> 
+        </OperateOnResidueSubset>
+
+
+        <DesignRestrictions name="hbnet_layer_design">
+            <Action selector_logic="surface" aas= "RHKDESTNQ"/>
+            <Action selector_logic="boundary" aas="RHKDESTNQWY"/> #TODO consider removing WY
+            <Action selector_logic="core"     aas="HSTNQWY"/>
+        </DesignRestrictions>
+
+
+        <IncludeCurrent name="current" />
+        <LimitAromaChi2 name="limitchi2" chi2max="110" chi2min="70" include_trp="True" />
+        <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1" />
+
+    	<OperateOnResidueSubset name="restrict_PRO_GLY" selector="pro_and_gly_positions">
+    		<PreventRepackingRLT/>
+    	</OperateOnResidueSubset>
+
+    </TASKOPERATIONS>
+
+
+
+<SIMPLE_METRICS>
+        <SelectedResiduesPyMOLMetric name="selected_designable" custom_type="design_selector" residue_selector="design_selector" />
+        <SelectedResiduesPyMOLMetric name="selected_lock" custom_type="lock" residue_selector="lock_selector" />
+        <SelectedResiduesPyMOLMetric name="AB_interface" custom_type="AB_interface" residue_selector="AB_interface"/>
+        <SelectedResiduesPyMOLMetric name="deep_core" custom_type="deep_core" residue_selector="deep_core"/>
+        <SelectedResiduesPyMOLMetric name="core" custom_type="core" residue_selector="core"/>
+        <SelectedResiduesPyMOLMetric name="boundary" custom_type="boundary" residue_selector="boundary"/>
+        <SelectedResiduesPyMOLMetric name="surface" custom_type="surface" residue_selector="surface"/>
+        <SelectedResiduesPyMOLMetric name="deep_bdry" custom_type="deep_bdry" residue_selector="deep_bdry"/>
+        <SelectedResiduesPyMOLMetric name="start" custom_type="start" residue_selector="start"/>
+    </SIMPLE_METRICS>
+
+    <MOVERS>
+	<RunSimpleMetrics name="report_selectors" metrics="selected_designable,selected_lock,AB_interface,core,boundary,surface,deep_core,deep_bdry,start"/>       
+
+        <ScoreMover name="score!" scorefxn="sfxn"/>
+        
+
+
+	#I found this "only start at interface pairs" option, but it doesn't seem to do what it sounds so best to keep this off
+	#also, thinking about allowing heavy unsats
+
+	<HBNetStapleInterface 
+            scorefxn="sfxn" 
+            name="place_hbnet_seed" 
+            hb_threshold="%%hb_threshold%%" 
+            onebody_hb_threshold="%%onebody_hb_threshold%%"
+            secondary_search="false"
+            min_helices_contacted_by_network="%%min_helices_contacted_by_network%%" 
+            core_selector="deep_core" 
+            boundary_selector="deep_bdry"
+            show_task="1" 
+            start_selector="start"
+            store_subnetworks="%%store_subnetworks%%" 
+            verbose="%%verbose%%" 
+            no_heavy_unsats_allowed="%%no_heavy_unsats_allowed%%" 
+            write_network_pdbs="0" 
+            min_network_size="%%min_network_size%%" 
+            max_unsat_Hpol="%%max_unsat_Hpol%%"
+            min_percent_hbond_capacity="%%min_percent_hbond_capacity%%"
+            interface_distance="%%interface_distance%%"
+            only_symm_interfaces="%%only_symm_interfaces%%"
+            at_least_one_net_w_aromatic_sc="%%at_least_one_net_w_aromatic_sc%%"
+
+            only_start_at_interface_pairs="%%only_start_at_interface_pairs%%"
+
+            min_intermolecular_hbonds="%%min_intermolecular_hbonds%%"
+            min_core_res="%%min_core_res%%" 
+            min_unique_networks="%%min_unique_networks%%"
+            max_networks_per_pose="%%max_networks_per_pose%%" 
+            write_cst_files="0" 
+            use_aa_dependent_weights="%%use_aa_dependent_weights%%" 
+            max_replicates_before_branch="%%max_replicates_before_branch%%"
+            max_replicates_before_unsat_check="%%max_replicates_before_unsat_check%%"
+            monte_carlo="true" 
+            seed_hbond_threshold="%%seed_hbond_threshold%%"
+            monte_carlo_seed_must_be_buried="1"
+	    monte_carlo_seed_must_be_fully_buried="%%monte_carlo_seed_must_be_fully_buried%%"
+            total_num_mc_runs="%%total_num_mc_runs%%" 
+            task_operations="ex1_ex2,lock,hbnet_layer_design,restrict_PRO_GLY" />
+
+
+
+<MultiplePoseMover name="MPM_filter" max_input_poses="9999">
+        <ROSETTASCRIPTS>
+          <RESIDUE_SELECTORS>
+
+	        <Chain name="chainA" chains="A"/>
+       		<Chain name="chainB" chains="B"/>
+
+
+
+	        #rk 201224 these selections may want to be adjusted for efficiency
+	        <SSElement name="interface_chA" selection="n_term" to_selection="3,H" chain="A" />
+	        <SSElement name="interface_chB" selection="3,H" to_selection="6,H" chain="B" />
+            <ResiduePDBInfoHasLabel name="hbnet_resis" property="HBNet"/>
+
+
+            <Layer name="surface" select_core="false" select_boundary="false" select_surface="true" use_sidechain_neighbors="true" core_cutoff="%%core_cutoff%%" surface_cutoff="%%surface_cutoff%%"/>
+        <Layer name="deep_bdry" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="true" core_cutoff="%%deep_core_cutoff%%" surface_cutoff="%%deep_surface_cutoff%%"/>
+        <Layer name="boundary" select_core="false" select_boundary="true" select_surface="false" use_sidechain_neighbors="true" core_cutoff="%%core_cutoff%%" surface_cutoff="%%surface_cutoff%%"/>
+        <Layer name="core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="true" core_cutoff="%%core_cutoff%%" surface_cutoff="%%surface_cutoff%%"/>
+        <Layer name="deep_core" select_core="true" select_boundary="false" select_surface="false" use_sidechain_neighbors="true" core_cutoff="%%deep_core_cutoff%%" surface_cutoff="%%deep_surface_cutoff%%"/>
+
+            <And name="chainA_core_hbnet_resis" selectors="chainA,hbnet_resis,deep_core"/>
+            <And name="chainB_core_hbnet_resis" selectors="chainB,hbnet_resis,deep_core"/>
+          </RESIDUE_SELECTORS>
+          <FILTERS>
+            <ResidueCount name="spanning_core_hbnets_A" min_residue_count="1" residue_selector="chainA_core_hbnet_resis" confidence="1"/>
+            <ResidueCount name="spanning_core_hbnets_B" min_residue_count="1" residue_selector="chainB_core_hbnet_resis" confidence="1"/>
+          </FILTERS>
+
+          <SIMPLE_METRICS>
+            <SelectedResiduesPyMOLMetric name="hbnet_resis" custom_type="hbnet_resis" residue_selector="hbnet_resis" />
+          </SIMPLE_METRICS>
+          <MOVERS>
+            SavePDBInfoMover name="save_comments" reference_info_name="comments" restore_info="0" />
+            SavePDBInfoMover name="restore_comments" reference_info_name="comments" restore_info="1" />
+            <RunSimpleMetrics name="report_hbnet" metrics="hbnet_resis"/> 
+          </MOVERS>
+
+          <PROTOCOLS>
+            #throw away things which are not acutally buried
+
+            <Add filter="spanning_core_hbnets_A"/>
+            <Add filter="spanning_core_hbnets_B"/>
+            <Add mover="report_hbnet"/>
+
+          </PROTOCOLS>
+        </ROSETTASCRIPTS>
+      </MultiplePoseMover>
+
+
+
+    </MOVERS>
+
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+	<Add mover="score!"/>
+	<Add mover="report_selectors"/>
+	<Add mover="place_hbnet_seed"/>
+	<Add mover="MPM_filter"/>
+    </PROTOCOLS>
+    <OUTPUT />
+</ROSETTASCRIPTS>
