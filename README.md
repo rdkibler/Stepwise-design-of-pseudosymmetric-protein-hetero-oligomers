@@ -1,1 +1,1 @@
-# pseudosymmetric_hetero-oligomers
+# Stepwise design of pseudosymmetric protein hetero-oligomers
