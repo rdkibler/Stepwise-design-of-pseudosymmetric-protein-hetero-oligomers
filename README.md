@@ -1,5 +1,6 @@
 # Stepwise design of pseudosymmetric protein hetero-oligomers
 
+This is the repo for the preprint https://www.biorxiv.org/content/10.1101/2023.04.07.535760v1
 
 You must first acquire a license to use [Rosetta](https://els2.comotion.uw.edu/product/rosetta) and [pyrosetta](https://els2.comotion.uw.edu/product/pyrosetta). 
 
