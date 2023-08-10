@@ -3,8 +3,8 @@
 This is the repo for the preprint https://www.biorxiv.org/content/10.1101/2023.04.07.535760v1
 
 ## System requirements
-RAM: 8GB
-OS: Ubuntu 22.04.2 LTS (Jammy Jellyfish) or similar version of linux
+* RAM: 8GB
+* OS: Ubuntu 22.04.2 LTS (Jammy Jellyfish) or similar version of linux
 
 ## Installation
 
@@ -21,6 +21,4 @@ Note that several scripts depend on `ss_grouped_vall_helix_shortLoop.h5`. This f
 
 To run the pipeline, pick either BGL or RTR as the example path to follow. Under both paths, the pipeline is run by visiting, adjusting, and running the scripts in the numbered subdirs. In most cases, the `gentasks.py` or `gentasks.ipynb` files both provide examples of how to run the scripts as well as prepare a list of tasks to be run. Like any software downloaded from the internet, the scripts may need to be adjusted to run on your system. That may includes paths to software, paths to input files, and paths to output files.
 
-
-
-
+Expected runtime for the complete pipeline is difficult to estimate, but expect to spend about a week of person-time and several years of CPU time. 
